@@ -45,7 +45,7 @@ class Ingester @Inject constructor(
         }
 
         // Parse early, catch invalid files
-        val parsed = payload.sourceProvider().parseAsIGC()
+        val parsed = payload.sourceProvider().use { it.parseAsIGC() }
 
         val newId = Flight.Id()
 
@@ -65,7 +65,7 @@ class Ingester @Inject constructor(
         )
 
         database.flightsIgc.insert(igcFlightEntity)
-        igcStorage.add(newId, payload.sourceProvider())
+        payload.sourceProvider().use { igcStorage.add(newId, it) }
 
         val stop = System.currentTimeMillis()
 

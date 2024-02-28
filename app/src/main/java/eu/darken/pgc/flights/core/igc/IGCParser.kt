@@ -8,6 +8,7 @@ import eu.darken.pgc.common.debug.logging.logTag
 import okio.Source
 import okio.buffer
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
@@ -18,10 +19,14 @@ class IGCParser @Inject constructor() {
         log(TAG) { "parse(${raw} bytes)" }
         val start = System.currentTimeMillis()
 
-        val rawLines = raw.buffer().readUtf8().lineSequence().filterValid()
+        val rawLines = raw.buffer().use {
+            it.readUtf8().lineSequence().filterValid()
+        }
 
         val aRecord = ARecord.parse(rawLines)
         val hRecord = HRecord.parse(rawLines)
+
+        val bRecords = BRecord.parse(rawLines)
 
         val stop = System.currentTimeMillis()
         log(TAG, VERBOSE) { "parse(...) took ${stop - start}ms" }
@@ -29,6 +34,7 @@ class IGCParser @Inject constructor() {
         return IGCFile(
             aRecord = aRecord,
             header = hRecord,
+            fixes = bRecords,
         )
     }
 
@@ -58,12 +64,15 @@ class IGCParser @Inject constructor() {
 
         companion object {
             fun parse(lines: Sequence<String>): ARecord? {
-                val line = lines.singleOrNull { it.first().uppercaseChar() == 'A' } ?: return null
-                return ARecord(
-                    manufacturerCode = line.drop(1).take(3),
-                    loggerCode = line.drop(4).take(3),
-                    idExtension = line.drop(7).takeIf { it.isNotBlank() },
-                )
+                val aRecordR = Regex("^A(\\w{3})(\\w{3})(.+?)$")
+                val match = lines.firstNotNullOfOrNull { aRecordR.matchEntire(it) }
+                return match?.let { result ->
+                    ARecord(
+                        manufacturerCode = result.groups[1]?.value,
+                        loggerCode = result.groups[2]?.value,
+                        idExtension = result.groups[3]?.value,
+                    )
+                }
             }
         }
     }
@@ -135,6 +144,46 @@ class IGCParser @Inject constructor() {
                     loggerHardware = loggerHardware,
                     loggerVersion = loggerVersion,
                 )
+            }
+        }
+    }
+
+    data class BRecord(
+        val time: LocalTime,
+        val location: Location,
+        val validity: Char,
+        val pressureAlt: Int,
+        val gnssAlt: Int,
+        val extra: String,
+    ) {
+
+        val altitude: Int
+            get() = if (gnssAlt != 0) gnssAlt else pressureAlt
+
+        data class Location(
+            val latitude: String,
+            val longitude: String,
+        )
+
+        companion object {
+            fun parse(lines: Sequence<String>): List<BRecord> {
+                val regex = Regex("^B(\\w{6})(\\w{7}[NS])(\\w{8}[EW])(\\w)(\\d{5})(\\d{5})(.+)$")
+                return lines
+                    .mapNotNull { regex.matchEntire(it) }
+                    .map { match ->
+                        BRecord(
+                            time = LocalTime.parse(match.groups[1]!!.value, DateTimeFormatter.ofPattern("HHmmss")),
+                            location = Location(
+                                latitude = match.groups[2]!!.value,
+                                longitude = match.groups[3]!!.value,
+                            ),
+                            validity = match.groups[4]!!.value.single(),
+                            pressureAlt = match.groups[5]!!.value.toInt(),
+                            gnssAlt = match.groups[6]!!.value.toInt(),
+                            extra = match.groups[7]!!.value,
+                        )
+                    }
+                    .toList()
             }
         }
     }

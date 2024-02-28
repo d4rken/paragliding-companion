@@ -34,7 +34,7 @@ class IGCStorage @Inject constructor(
     suspend fun add(id: Flight.Id, source: Source) = lock.withLock {
         log(TAG, VERBOSE) { "add($id, $source)..." }
         val path = id.toStoragePath()
-        path.sink().buffer().writeAll(source)
+        path.sink().use { it.buffer().writeAll(source) }
         log(TAG, VERBOSE) { "add($id, $source) -> $path" }
     }
 
@@ -50,7 +50,7 @@ class IGCStorage @Inject constructor(
 
     suspend fun get(id: Flight.Id): IGCFile? {
         log(TAG, VERBOSE) { "get($id)" }
-        return getRaw(id)?.let { igcParser.parse(it) }
+        return getRaw(id)?.use { igcParser.parse(it) }
     }
 
     suspend fun remove(id: Flight.Id): Boolean = lock.withLock {

@@ -83,7 +83,9 @@ class ImporterFragmentVM @Inject constructor(
                         ingester.ingest(
                             IngestIGCPayload(
                                 sourceProvider = {
-                                    contentResolver.openInputStream(uri)!!.also { dangles.add(it) }.source()
+                                    contentResolver.openInputStream(uri)!!
+                                        .also { dangles.add(it) }
+                                        .source()
                                 },
                                 originalSource = uri.toString(),
                                 sourceType = when {

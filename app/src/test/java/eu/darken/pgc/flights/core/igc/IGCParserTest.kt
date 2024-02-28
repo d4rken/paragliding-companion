@@ -7,6 +7,7 @@ import okio.ByteString
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 import java.time.LocalDate
+import java.time.LocalTime
 
 class IGCParserTest : BaseTest() {
 
@@ -34,6 +35,17 @@ class IGCParserTest : BaseTest() {
                 gliderType = "ADVANCE Alpha 7",
                 loggerHardware = "Google Pixel 5 13",
                 loggerVersion = "0.9.8.7.1",
+            )
+            fixes[0] shouldBe IGCParser.BRecord(
+                time = LocalTime.of(16, 28, 18),
+                location = IGCParser.BRecord.Location(
+                    latitude = "4733226N",
+                    longitude = "01005399E",
+                ),
+                validity = 'A',
+                pressureAlt = 0,
+                gnssAlt = 754,
+                extra = "32",
             )
         }
     }

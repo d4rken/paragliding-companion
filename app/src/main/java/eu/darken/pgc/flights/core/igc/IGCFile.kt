@@ -3,6 +3,7 @@ package eu.darken.pgc.flights.core.igc
 data class IGCFile(
     val aRecord: IGCParser.ARecord?,
     val header: IGCParser.HRecord?,
+    val fixes: List<IGCParser.BRecord>,
 ) {
     val manufacturerCode: String?
         get() = aRecord?.manufacturerCode
