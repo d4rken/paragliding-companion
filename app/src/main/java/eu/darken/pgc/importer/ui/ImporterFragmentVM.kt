@@ -115,6 +115,11 @@ class ImporterFragmentVM @Inject constructor(
         progressHolder.value = null
     }
 
+    fun reparse() = launch {
+        log(TAG) { "reparse()" }
+        ingester.reingest()
+    }
+
     sealed interface State {
         data class Start(
             val idle: Boolean = true
@@ -135,6 +140,6 @@ class ImporterFragmentVM @Inject constructor(
     }
 
     companion object {
-        internal val TAG = logTag("Ingester", "Fragment", "VM")
+        internal val TAG = logTag("Importer", "Fragment", "VM")
     }
 }

@@ -1,6 +1,5 @@
 package eu.darken.pgc.main.ui.dashboard
 
-import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import eu.darken.pgc.common.BuildConfigWrap
@@ -16,14 +15,11 @@ import eu.darken.pgc.flights.core.FlightStats
 import eu.darken.pgc.flights.ui.FlightsGlobalDashCardVH
 import eu.darken.pgc.importer.ui.ImporterDashCardVH
 import eu.darken.pgc.xctrack.core.XCTrackManager
-import eu.darken.pgc.xctrack.ui.XCTrackSetupCardVH
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 import net.swiftzer.semver.SemVer
 import javax.inject.Inject
 
@@ -72,9 +68,8 @@ class DashboardFragmentVM @Inject constructor(
     val state = combine(
         flightRepo.data,
         flightStats.data,
-        xcTrackManager.state.map { it }.onStart { emit(null as XCTrackManager.State?) },
         flowOf("")
-    ) { flightData, flightStats, xcTrackState, _ ->
+    ) { flightData, flightStats, _ ->
         val items = mutableListOf<DashboardAdapter.Item>()
 
         if (flightData.flights.isEmpty()) {
@@ -90,31 +85,8 @@ class DashboardFragmentVM @Inject constructor(
             ).run { items.add(this) }
         }
 
-        xcTrackState
-            .takeIf { !it.isSetupDone && !it.isSetupDismissed }
-            ?.let {
-                val item = XCTrackSetupCardVH.Item(
-                    state = it,
-                    onContinue = {
-                        launch {
-                            val event = DashboardEvents.GrantXCTrackAccess(xcTrackManager.getAccessIntent())
-                            events.postValue(event)
-                        }
-                    },
-                    onDismiss = {
-                        launch { xcTrackManager.setSetupDismiss(true) }
-                    }
-                )
-                items.add(item)
-            }
-
-
         State(items = items)
     }.asLiveData2()
-
-    fun takeXCTrackAccessUri(uri: Uri) = launch {
-        xcTrackManager.takeAccess(uri)
-    }
 
     data class State(
         val items: List<DashboardAdapter.Item>

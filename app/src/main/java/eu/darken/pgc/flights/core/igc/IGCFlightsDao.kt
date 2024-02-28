@@ -3,6 +3,7 @@ package eu.darken.pgc.flights.core.igc
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import eu.darken.pgc.flights.core.Flight
 import eu.darken.pgc.flights.core.database.FlightsDao
 import kotlinx.coroutines.flow.Flow
@@ -28,8 +29,11 @@ interface IGCFlightsDao : FlightsDao {
     override fun getBySha1(sha1: String): IGCFlightEntity?
 
     @Insert
-    suspend fun insert(flight: IGCFlightEntity): Long
+    suspend fun insert(flight: IGCFlightEntity)
+
+    @Update
+    suspend fun update(flight: IGCFlightEntity)
 
     @Query("DELETE FROM flights_igc WHERE flight_id = :flightId")
-    suspend fun delete(flightId: Flight.Id): Int
+    suspend fun delete(flightId: Flight.Id)
 }

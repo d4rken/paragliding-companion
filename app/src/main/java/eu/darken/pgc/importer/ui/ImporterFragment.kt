@@ -58,7 +58,10 @@ class ImporterFragment : Fragment3(R.layout.importer_fragment) {
             setupWithNavController(findNavController())
             setOnMenuItemClickListener {
                 when (it.itemId) {
-
+                    R.id.action_reparse -> {
+                        vm.reparse()
+                        true
+                    }
 
                     else -> super.onOptionsItemSelected(it)
                 }
@@ -120,6 +123,6 @@ class ImporterFragment : Fragment3(R.layout.importer_fragment) {
     }
 
     companion object {
-        internal val TAG = logTag("Ingester", "Fragment")
+        internal val TAG = logTag("Importer", "Fragment")
     }
 }

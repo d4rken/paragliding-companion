@@ -80,4 +80,5 @@
     <string name="flights_dash_global_count_msg">Total flights: %d</string>
     <string name="flights_dash_global_hours_msg">Flight hours: %.2f</string>
     <string name="flights_dash_global_locations_msg">Known locations: %d</string>
+    <string name="flights_reparse_data_label">Reparse existing data</string>
 </resources>

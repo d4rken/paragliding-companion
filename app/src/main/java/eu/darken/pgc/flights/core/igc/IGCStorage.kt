@@ -36,14 +36,19 @@ class IGCStorage @Inject constructor(
         log(TAG, VERBOSE) { "add($id, $raw) -> $path" }
     }
 
-    suspend fun get(id: Flight.Id): IGCFile? = lock.withLock {
+    suspend fun getRaw(id: Flight.Id): ByteString? = lock.withLock {
         log(TAG, VERBOSE) { "get($id)" }
         val path = id.toStoragePath()
         if (!path.exists()) {
             log(TAG, WARN) { "get($id): $path does not exist" }
             return@withLock null
         }
-        igcParser.parse(path.readBytes().toByteString())
+        path.readBytes().toByteString()
+    }
+
+    suspend fun get(id: Flight.Id): IGCFile? {
+        log(TAG, VERBOSE) { "get($id)" }
+        return getRaw(id)?.let { igcParser.parse(it) }
     }
 
     suspend fun remove(id: Flight.Id): IGCFile? = lock.withLock {

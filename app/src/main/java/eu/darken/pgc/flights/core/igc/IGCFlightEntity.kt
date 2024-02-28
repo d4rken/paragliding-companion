@@ -11,7 +11,22 @@ import java.time.Instant
 data class IGCFlightEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(name = "flight_id") override val flightId: Flight.Id,
-    @ColumnInfo(name = "imported_at") override val importedAt: Instant = Instant.now(),
+    @ColumnInfo(name = "imported_at") override val importedAt: Instant,
     @ColumnInfo(name = "checksum_sha1") override val checksumSha1: String,
     @ColumnInfo(name = "flight_source") override val sourceType: Flight.SourceType,
 ) : FlightEntity
+
+
+fun IGCFile.toFlightEntity(
+    id: Long = 0,
+    flightId: Flight.Id,
+    importedAt: Instant = Instant.now(),
+    checksumSha1: String,
+    sourceType: Flight.SourceType
+) = IGCFlightEntity(
+    id = id,
+    flightId = flightId,
+    checksumSha1 = checksumSha1,
+    importedAt = importedAt,
+    sourceType = sourceType,
+)

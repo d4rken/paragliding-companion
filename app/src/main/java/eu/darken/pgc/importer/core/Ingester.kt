@@ -1,24 +1,28 @@
 package eu.darken.pgc.importer.core
 
 import eu.darken.pgc.common.debug.logging.Logging.Priority.ERROR
+import eu.darken.pgc.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.pgc.common.debug.logging.Logging.Priority.WARN
 import eu.darken.pgc.common.debug.logging.asLog
 import eu.darken.pgc.common.debug.logging.log
 import eu.darken.pgc.common.debug.logging.logTag
 import eu.darken.pgc.flights.core.Flight
 import eu.darken.pgc.flights.core.database.FlightsDatabase
-import eu.darken.pgc.flights.core.igc.IGCFlightEntity
 import eu.darken.pgc.flights.core.igc.IGCParser
 import eu.darken.pgc.flights.core.igc.IGCStorage
+import eu.darken.pgc.flights.core.igc.toFlightEntity
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import okio.ByteString
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class Ingester @Inject constructor(
     private val igcParser: IGCParser,
-    private val storage: IGCStorage,
+    private val igcStorage: IGCStorage,
     private val database: FlightsDatabase,
 ) {
 
@@ -27,7 +31,7 @@ class Ingester @Inject constructor(
     suspend fun ingest(payload: IngestIGCPayload): Boolean = lock.withLock {
         log(TAG) { "ingest($payload)" }
 
-        val sha1 = payload.file.sha1().base64()
+        val sha1 = payload.file.toFlightChecksum()
         val existing = database.findBySha1(sha1)
         if (existing != null) {
             log(TAG, WARN) { "Duplicate flight: $existing" }
@@ -35,12 +39,7 @@ class Ingester @Inject constructor(
         }
 
         // Parse early, catch invalid files
-        val parsed = try {
-            igcParser.parse(payload.file)
-        } catch (e: Exception) {
-            log(TAG, ERROR) { "Parsing failed for $payload: ${e.asLog()}" }
-            throw e
-        }
+        val parsed = payload.file.parseAsIGC()
 
         val newId = Flight.Id()
 
@@ -50,7 +49,7 @@ class Ingester @Inject constructor(
             throw IllegalArgumentException("COLLISION: $idCollision")
         }
 
-        val igcFlightEntity = IGCFlightEntity(
+        val igcFlightEntity = parsed.toFlightEntity(
             flightId = newId,
             checksumSha1 = sha1,
             sourceType = when (payload.sourceType) {
@@ -60,9 +59,45 @@ class Ingester @Inject constructor(
         )
 
         database.flightsIgc.insert(igcFlightEntity)
-        storage.add(newId, payload.file)
+        igcStorage.add(newId, payload.file)
 
         return true
+    }
+
+    suspend fun reingest() = lock.withLock {
+        log(TAG) { "reingest()" }
+        val igcFlights = database.flightsIgc.getAll()
+
+        igcFlights.forEachIndexed { index, flight ->
+            log(TAG, VERBOSE) { "Reingesting: $index: $flight" }
+            val igcRaw = igcStorage.getRaw(flight.flightId)!!
+
+            // Parse early, catch invalid files
+            val parsed = igcRaw.parseAsIGC()
+
+            withContext(NonCancellable) {
+                val oldEntity = database.flightsIgc.getById(flight.flightId)!!
+                val newEntity = parsed.toFlightEntity(
+                    id = oldEntity.id,
+                    flightId = oldEntity.flightId,
+                    importedAt = oldEntity.importedAt,
+                    checksumSha1 = oldEntity.checksumSha1,
+                    sourceType = oldEntity.sourceType,
+                )
+                log(TAG, VERBOSE) { "Before (#$index): $oldEntity" }
+                log(TAG, VERBOSE) { "After  (#$index): $newEntity" }
+                database.flightsIgc.update(newEntity)
+            }
+        }
+    }
+
+    private fun ByteString.toFlightChecksum(): String = this.sha1().base64()
+
+    private suspend fun ByteString.parseAsIGC() = try {
+        igcParser.parse(this)
+    } catch (e: Exception) {
+        log(TAG, ERROR) { "Parsing failed for $this: ${e.asLog()}" }
+        throw e
     }
 
     companion object {
