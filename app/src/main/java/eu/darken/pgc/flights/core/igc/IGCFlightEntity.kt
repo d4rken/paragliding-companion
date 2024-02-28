@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import eu.darken.pgc.flights.core.Flight
 import eu.darken.pgc.flights.core.database.FlightEntity
+import java.time.Duration
 import java.time.Instant
 
 @Entity(tableName = "flights_igc")
@@ -15,6 +16,7 @@ data class IGCFlightEntity(
     @ColumnInfo(name = "checksum_sha1") override val checksumSha1: String,
     @ColumnInfo(name = "flight_source") override val sourceType: Flight.SourceType,
     @ColumnInfo(name = "flight_site") override val flightSite: String?,
+    @ColumnInfo(name = "flight_duration") override val flightDuration: Duration?,
 ) : FlightEntity
 
 
@@ -31,4 +33,5 @@ fun IGCFile.toFlightEntity(
     importedAt = importedAt,
     sourceType = sourceType,
     flightSite = header?.flightSite,
+    flightDuration = flightDuration,
 )
