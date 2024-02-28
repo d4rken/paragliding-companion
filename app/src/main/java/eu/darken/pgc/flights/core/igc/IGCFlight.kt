@@ -8,8 +8,8 @@ data class IGCFlight(
     override val sourceType: Flight.SourceType,
     private val igcFlightEntity: IGCFlightEntity,
 ) : Flight {
-    override val duration: Duration
-        get() = Duration.ofHours(3)
-    override val location: String
-        get() = "Buchenberg"
+    override val duration: Duration?
+        get() = null
+    override val location: String?
+        get() = null
 }

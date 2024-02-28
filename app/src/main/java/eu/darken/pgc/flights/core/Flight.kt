@@ -9,7 +9,7 @@ interface Flight {
 
     val id: Id
 
-    val duration: Duration
+    val duration: Duration?
     val location: String?
 
     val sourceType: SourceType

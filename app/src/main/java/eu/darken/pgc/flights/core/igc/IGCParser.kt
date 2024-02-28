@@ -22,7 +22,6 @@ class IGCParser @Inject constructor() {
             .lineSequence()
             .filterNot { it.isBlank() }
             .forEachIndexed { index, line ->
-                log(TAG, VERBOSE) { "Parsing #$index: $line" }
                 when {
                     line.isARecord() -> {
                         aRecord = line.parseARecord()
@@ -44,11 +43,13 @@ class IGCParser @Inject constructor() {
     data class ARecord(
         val manufacturerCode: String,
         val loggerCode: String,
+        val idExtension: String? = null,
     )
 
     private fun String.parseARecord() = ARecord(
         manufacturerCode = drop(1).take(3),
-        loggerCode = drop(4),
+        loggerCode = drop(4).take(3),
+        idExtension = drop(7).takeIf { it.isNotBlank() },
     )
 
     companion object {

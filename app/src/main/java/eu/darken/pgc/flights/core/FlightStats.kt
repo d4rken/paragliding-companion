@@ -18,8 +18,14 @@ class FlightStats @Inject constructor(
         .map { flights ->
             Stats(
                 globalCount = flights.flights.size,
-                flightHours = flights.flights.sumOf { it.duration.toMillis() }.let { Duration.ofMillis(it) },
-                locations = flights.flights.filter { it.location != null }.distinctBy { it.location }.size,
+                flightHours = flights.flights
+                    .mapNotNull { it.duration }
+                    .sumOf { it.toMillis() }
+                    .let { Duration.ofMillis(it) },
+                locations = flights.flights
+                    .mapNotNull { it.location }
+                    .toSet()
+                    .size,
             )
         }
         .replayingShare(scope)
