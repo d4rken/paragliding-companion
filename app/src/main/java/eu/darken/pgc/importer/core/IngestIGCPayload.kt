@@ -1,9 +1,9 @@
 package eu.darken.pgc.importer.core
 
-import okio.ByteString
+import okio.Source
 
 data class IngestIGCPayload(
-    val file: ByteString,
+    val sourceProvider: suspend () -> Source,
     val sourceType: SourceType,
     val originalSource: String,
 ) {

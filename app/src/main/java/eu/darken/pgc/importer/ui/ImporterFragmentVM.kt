@@ -18,8 +18,10 @@ import eu.darken.pgc.importer.core.IngestIGCPayload
 import eu.darken.pgc.importer.core.Ingester
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import okhttp3.internal.closeQuietly
 import okio.buffer
 import okio.source
+import java.io.InputStream
 import javax.inject.Inject
 
 @HiltViewModel
@@ -73,24 +75,31 @@ class ImporterFragmentVM @Inject constructor(
                     progressMsg = (uri.lastPathSegment ?: uri.toString()).toCaString()
                 )
 
+                val dangles = mutableSetOf<InputStream>()
+
                 try {
-                    val raw = contentResolver.openInputStream(uri)!!.use { inputStream ->
+                    val added = contentResolver.openInputStream(uri)!!.use { inputStream ->
                         inputStream.source().buffer().readByteString()
+                        ingester.ingest(
+                            IngestIGCPayload(
+                                sourceProvider = {
+                                    contentResolver.openInputStream(uri)!!.also { dangles.add(it) }.source()
+                                },
+                                originalSource = uri.toString(),
+                                sourceType = when {
+                                    uri.authority?.contains("org.xcontest.XCTrack") == true -> IngestIGCPayload.SourceType.XCTRACK
+                                    else -> IngestIGCPayload.SourceType.UNKNOWN
+                                },
+                            )
+                        )
                     }
 
-                    val added = ingester.ingest(
-                        IngestIGCPayload(
-                            file = raw,
-                            originalSource = uri.toString(),
-                            sourceType = when {
-                                uri.authority?.contains("org.xcontest.XCTrack") == true -> IngestIGCPayload.SourceType.XCTRACK
-                                else -> IngestIGCPayload.SourceType.UNKNOWN
-                            },
-                        )
-                    )
+
                     if (added) success.add(uri) else skipped.add(uri)
                 } catch (e: Exception) {
                     failed.add(uri to e)
+                } finally {
+                    dangles.forEach { it.closeQuietly() }
                 }
 
                 done.add(uri)

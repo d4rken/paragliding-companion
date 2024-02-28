@@ -15,7 +15,10 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import okio.ByteString
+import okio.ByteString.Companion.toByteString
+import okio.Source
+import okio.buffer
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,8 +33,9 @@ class Ingester @Inject constructor(
 
     suspend fun ingest(payload: IngestIGCPayload): Boolean = lock.withLock {
         log(TAG) { "ingest($payload)" }
+        val start = System.currentTimeMillis()
 
-        val sha1 = payload.file.toFlightChecksum()
+        val sha1 = payload.sourceProvider().use { it.toFlightChecksum() }
         val existing = database.findBySha1(sha1)
         if (existing != null) {
             log(TAG, WARN) { "Duplicate flight: $existing" }
@@ -39,7 +43,7 @@ class Ingester @Inject constructor(
         }
 
         // Parse early, catch invalid files
-        val parsed = payload.file.parseAsIGC()
+        val parsed = payload.sourceProvider().parseAsIGC()
 
         val newId = Flight.Id()
 
@@ -59,8 +63,11 @@ class Ingester @Inject constructor(
         )
 
         database.flightsIgc.insert(igcFlightEntity)
-        igcStorage.add(newId, payload.file)
+        igcStorage.add(newId, payload.sourceProvider())
 
+        val stop = System.currentTimeMillis()
+
+        log(TAG) { "ingest($payload) took ${stop - start}ms" }
         return true
     }
 
@@ -91,9 +98,21 @@ class Ingester @Inject constructor(
         }
     }
 
-    private fun ByteString.toFlightChecksum(): String = this.sha1().base64()
+    private fun Source.toFlightChecksum(): String = MessageDigest.getInstance("SHA-1")
+        .let { md ->
+            buffer().use { stream ->
+                val buffer = ByteArray(8192)
+                var read: Int
+                while (stream.read(buffer).also { read = it } > 0) {
+                    md.update(buffer, 0, read)
+                }
+            }
+            md.digest()
+        }
+        .let { it.toByteString(0, it.size) }
+        .base64()
 
-    private suspend fun ByteString.parseAsIGC() = try {
+    private suspend fun Source.parseAsIGC() = try {
         igcParser.parse(this)
     } catch (e: Exception) {
         log(TAG, ERROR) { "Parsing failed for $this: ${e.asLog()}" }

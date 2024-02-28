@@ -9,8 +9,10 @@ import eu.darken.pgc.common.debug.logging.logTag
 import eu.darken.pgc.flights.core.Flight
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import okio.ByteString
-import okio.ByteString.Companion.toByteString
+import okio.Source
+import okio.buffer
+import okio.sink
+import okio.source
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,21 +31,21 @@ class IGCStorage @Inject constructor(
     private fun Flight.Id.toStoragePath(): File = File(storageDir, "${this.value}.igc")
     private val lock = Mutex()
 
-    suspend fun add(id: Flight.Id, raw: ByteString) = lock.withLock {
-        log(TAG, VERBOSE) { "add($id, $raw)..." }
+    suspend fun add(id: Flight.Id, source: Source) = lock.withLock {
+        log(TAG, VERBOSE) { "add($id, $source)..." }
         val path = id.toStoragePath()
-        path.writeBytes(raw.toByteArray())
-        log(TAG, VERBOSE) { "add($id, $raw) -> $path" }
+        path.sink().buffer().writeAll(source)
+        log(TAG, VERBOSE) { "add($id, $source) -> $path" }
     }
 
-    suspend fun getRaw(id: Flight.Id): ByteString? = lock.withLock {
+    suspend fun getRaw(id: Flight.Id): Source? = lock.withLock {
         log(TAG, VERBOSE) { "get($id)" }
         val path = id.toStoragePath()
         if (!path.exists()) {
             log(TAG, WARN) { "get($id): $path does not exist" }
             return@withLock null
         }
-        path.readBytes().toByteString()
+        path.source()
     }
 
     suspend fun get(id: Flight.Id): IGCFile? {
@@ -51,18 +53,17 @@ class IGCStorage @Inject constructor(
         return getRaw(id)?.let { igcParser.parse(it) }
     }
 
-    suspend fun remove(id: Flight.Id): IGCFile? = lock.withLock {
+    suspend fun remove(id: Flight.Id): Boolean = lock.withLock {
         log(TAG, VERBOSE) { "remove($id)" }
         val path = id.toStoragePath()
         if (!path.exists()) {
             log(TAG, WARN) { "remove($id): $path does not exist" }
-            return@withLock null
+            return@withLock false
         }
-        val raw = path.readBytes().toByteString()
         if (!path.delete()) {
             log(TAG, ERROR) { "remove($id) failed to delete $path" }
         }
-        igcParser.parse(raw)
+        true
     }
 
     companion object {

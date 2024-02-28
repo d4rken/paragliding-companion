@@ -8,9 +8,9 @@ object IGCFileTestData {
 
     private fun String.readAsset() = File(this).readBytes().toByteString()
 
-    val smallNormalFile: ByteString
-        get() = "./src/test/assets/testflights/SimpleIGC.igc".readAsset()
+    val smallXCTrackerFile: ByteString
+        get() = "./src/test/assets/testflights/SimpleXCTracker.igc".readAsset()
 
     val largeComplexFile: ByteString
-        get() = "./src/test/assets/testflights/ComplexIGC.igc".readAsset()
+        get() = "./src/test/assets/testflights/ComplexXPSoaring.igc".readAsset()
 }

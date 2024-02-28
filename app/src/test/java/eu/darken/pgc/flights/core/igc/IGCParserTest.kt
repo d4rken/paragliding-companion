@@ -2,6 +2,7 @@ package eu.darken.pgc.flights.core.igc
 
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.test.runTest
+import okio.Buffer
 import org.junit.jupiter.api.Test
 import testhelper.BaseTest
 
@@ -11,7 +12,7 @@ class IGCParserTest : BaseTest() {
 
     @Test
     fun `parse normal`() = runTest {
-        val igcFile = create().parse(IGCFileTestData.smallNormalFile)
+        val igcFile = create().parse(Buffer().write(IGCFileTestData.smallXCTrackerFile))
         igcFile.apply {
             aRecord shouldBe IGCParser.ARecord(
                 manufacturerCode = "XCT",
@@ -23,7 +24,7 @@ class IGCParserTest : BaseTest() {
 
     @Test
     fun `parse complex`() = runTest {
-        val igcFile = create().parse(IGCFileTestData.largeComplexFile)
+        val igcFile = create().parse(Buffer().write(IGCFileTestData.largeComplexFile))
         igcFile.apply {
             aRecord shouldBe IGCParser.ARecord(
                 manufacturerCode = "LXV",
