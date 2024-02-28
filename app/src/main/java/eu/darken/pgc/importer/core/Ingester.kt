@@ -8,6 +8,7 @@ import eu.darken.pgc.common.debug.logging.log
 import eu.darken.pgc.common.debug.logging.logTag
 import eu.darken.pgc.flights.core.Flight
 import eu.darken.pgc.flights.core.database.FlightsDatabase
+import eu.darken.pgc.flights.core.igc.IGCException
 import eu.darken.pgc.flights.core.igc.IGCParser
 import eu.darken.pgc.flights.core.igc.IGCStorage
 import eu.darken.pgc.flights.core.igc.toFlightEntity
@@ -67,7 +68,7 @@ class Ingester @Inject constructor(
 
         val stop = System.currentTimeMillis()
 
-        log(TAG) { "ingest($payload) took ${stop - start}ms" }
+        log(TAG) { "ingest(...) took ${stop - start}ms" }
         return true
     }
 
@@ -116,7 +117,7 @@ class Ingester @Inject constructor(
         igcParser.parse(this)
     } catch (e: Exception) {
         log(TAG, ERROR) { "Parsing failed for $this: ${e.asLog()}" }
-        throw e
+        throw IGCException(cause = e, "Parsing failed.")
     }
 
     companion object {

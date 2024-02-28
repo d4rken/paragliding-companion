@@ -1,63 +1,52 @@
 package eu.darken.pgc.flights.core.igc
 
 import dagger.Reusable
-import eu.darken.pgc.common.debug.logging.Logging.Priority.ERROR
+import eu.darken.pgc.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.pgc.common.debug.logging.Logging.Priority.WARN
-import eu.darken.pgc.common.debug.logging.asLog
 import eu.darken.pgc.common.debug.logging.log
 import eu.darken.pgc.common.debug.logging.logTag
 import okio.Source
 import okio.buffer
-import java.time.Instant
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 @Reusable
 class IGCParser @Inject constructor() {
 
     suspend fun parse(raw: Source): IGCFile {
-        log(TAG) { "ingest(${raw} bytes)" }
+        log(TAG) { "parse(${raw} bytes)" }
+        val start = System.currentTimeMillis()
 
-        var aRecord = ARecord()
-        var headerRecord = HRecord()
+        val rawLines = raw.buffer().readUtf8().lineSequence().filterValid()
 
-        val rawText = raw.buffer().readUtf8().lineSequence()
+        val aRecord = ARecord.parse(rawLines)
+        val hRecord = HRecord.parse(rawLines)
 
-        rawText
-            .forEachIndexed { index, line ->
-                if (line.isBlank()) {
-                    log(TAG, WARN) { "Blank line at #$index" }
-                    return@forEachIndexed
-                }
-                if (line.length > 76) {
-                    log(TAG, WARN) { "Oversized line (${line.length}) at #$index" }
-                    return@forEachIndexed
-                }
-
-                when (line.first().uppercaseChar()) {
-                    ARecord.PREFIX -> {
-                        aRecord = try {
-                            ARecord.parse(line)
-                        } catch (e: Exception) {
-                            log(TAG, ERROR) { "failed to parse ARecord: ${e.asLog()}" }
-                            aRecord
-                        }
-                    }
-
-                    HRecord.PREFIX -> {
-                        if (headerRecord == null) headerRecord = HRecord()
-
-                    }
-
-                    else -> {
-                        log(TAG, WARN) { "Unknown prefix (#$index): $line" }
-                    }
-                }
-            }
+        val stop = System.currentTimeMillis()
+        log(TAG, VERBOSE) { "parse(...) took ${stop - start}ms" }
 
         return IGCFile(
             aRecord = aRecord,
+            header = hRecord,
         )
     }
+
+    private fun String.isLineValid(index: Int): Boolean {
+        val line = this
+        if (line.isBlank()) {
+            log(TAG, WARN) { "Blank line at #$index" }
+            return false
+        }
+        if (line.length > 76) {
+            log(TAG, WARN) { "Oversized line (${line.length}) at #$index" }
+            return false
+        }
+        return true
+    }
+
+    private fun Sequence<String>.filterValid(): Sequence<String> = this
+        .filterIndexed { index, line -> line.isLineValid(index) }
 
     data class ARecord(
         val manufacturerCode: String? = null,
@@ -68,28 +57,69 @@ class IGCParser @Inject constructor() {
         fun isValid() = manufacturerCode != null && loggerCode != null
 
         companion object {
-            const val PREFIX = 'A'
-            fun parse(line: String) = line.run {
-                ARecord(
-                    manufacturerCode = drop(1).take(3),
-                    loggerCode = drop(4).take(3),
-                    idExtension = drop(7).takeIf { it.isNotBlank() },
+            fun parse(lines: Sequence<String>): ARecord? {
+                val line = lines.singleOrNull { it.first().uppercaseChar() == 'A' } ?: return null
+                return ARecord(
+                    manufacturerCode = line.drop(1).take(3),
+                    loggerCode = line.drop(4).take(3),
+                    idExtension = line.drop(7).takeIf { it.isNotBlank() },
                 )
             }
         }
     }
 
-    class HRecord(
-        val recordedAt: Instant? = null,
+    data class HRecord(
+        val flightDay: LocalDate? = null,
+        val flightDayNumber: Int? = null,
         val fixAccuraceMeters: Int? = null,
+        val flightSite: String? = null,
+        val pilotInCharge: String? = null,
+        val gliderType: String? = null,
     ) {
+
+        fun isValid() = flightDay != null
+
         companion object {
-            const val PREFIX = 'H'
-            fun parse(line: String) = line.run {
-                HRecord(
-//                    manufacturerCode = drop(1).take(3),
-//                    loggerCode = drop(4).take(3),
-//                    idExtension = drop(7).takeIf { it.isNotBlank() },
+            fun parse(lines: Sequence<String>): HRecord? {
+                val hlines = lines.filter { it.first().uppercaseChar() == 'H' }.toList()
+                if (hlines.isEmpty()) return null
+
+                var recordedAt: LocalDate? = null
+                var flightDayNumber: Int? = null
+
+                val datePattern = Regex("^(?:HFDTE|HFDTEDATE:)(\\w{6}),?(\\d+)?$")
+                hlines.firstNotNullOfOrNull { datePattern.matchEntire(it) }?.let { match ->
+                    recordedAt = LocalDate.parse(match.groupValues[1], DateTimeFormatter.ofPattern("ddMMyy"))
+                    flightDayNumber = match.groups[2]?.value?.toInt()
+                }
+
+                val fixAccuracyPattern = Regex("^HFFXA(\\d+?)$")
+                val fixAccuraceMeters: Int? = hlines
+                    .firstNotNullOfOrNull { fixAccuracyPattern.matchEntire(it) }
+                    ?.let { match -> match.groupValues[1].toInt() }
+
+                val flightSitePattern = Regex("^HOSITSite:(.+)$", RegexOption.IGNORE_CASE)
+                val flightSite: String? = hlines
+                    .firstNotNullOfOrNull { flightSitePattern.matchEntire(it) }
+                    ?.let { match -> match.groupValues[1] }
+
+                val pilotInChargePattern = Regex("^(?:HFPLTPILOT|HFPLTPILOTINCHARGE):(.+)$", RegexOption.IGNORE_CASE)
+                val pilotInCharge: String? = hlines
+                    .firstNotNullOfOrNull { pilotInChargePattern.matchEntire(it) }
+                    ?.let { match -> match.groupValues[1] }
+
+                val glideTypePattern = Regex("^HFGTYGLIDERTYPE:(.+?)$")
+                val glidertype: String? = hlines
+                    .firstNotNullOfOrNull { glideTypePattern.matchEntire(it) }
+                    ?.let { match -> match.groupValues[1] }
+
+                return HRecord(
+                    flightDay = recordedAt,
+                    flightDayNumber = flightDayNumber,
+                    fixAccuraceMeters = fixAccuraceMeters,
+                    flightSite = flightSite,
+                    pilotInCharge = pilotInCharge,
+                    gliderType = glidertype,
                 )
             }
         }
