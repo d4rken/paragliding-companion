@@ -1,6 +1,7 @@
 package eu.darken.pgc.importer.core
 
 import eu.darken.pgc.common.debug.logging.Logging.Priority.ERROR
+import eu.darken.pgc.common.debug.logging.Logging.Priority.INFO
 import eu.darken.pgc.common.debug.logging.Logging.Priority.VERBOSE
 import eu.darken.pgc.common.debug.logging.Logging.Priority.WARN
 import eu.darken.pgc.common.debug.logging.asLog
@@ -92,8 +93,10 @@ class Ingester @Inject constructor(
                     checksumSha1 = oldEntity.checksumSha1,
                     sourceType = oldEntity.sourceType,
                 )
-                log(TAG, VERBOSE) { "Before (#$index): $oldEntity" }
-                log(TAG, VERBOSE) { "After  (#$index): $newEntity" }
+                if (oldEntity != newEntity) {
+                    log(TAG, INFO) { "Before (#$index): $oldEntity" }
+                    log(TAG, INFO) { "After  (#$index): $newEntity" }
+                }
                 database.flightsIgc.update(newEntity)
             }
         }

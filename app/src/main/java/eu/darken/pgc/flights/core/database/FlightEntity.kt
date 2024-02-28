@@ -8,4 +8,6 @@ interface FlightEntity {
     val importedAt: Instant
     val checksumSha1: String
     val sourceType: Flight.SourceType
+
+    val flightSite: String?
 }

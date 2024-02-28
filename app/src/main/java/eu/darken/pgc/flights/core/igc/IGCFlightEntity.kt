@@ -14,6 +14,7 @@ data class IGCFlightEntity(
     @ColumnInfo(name = "imported_at") override val importedAt: Instant,
     @ColumnInfo(name = "checksum_sha1") override val checksumSha1: String,
     @ColumnInfo(name = "flight_source") override val sourceType: Flight.SourceType,
+    @ColumnInfo(name = "flight_site") override val flightSite: String?,
 ) : FlightEntity
 
 
@@ -29,4 +30,5 @@ fun IGCFile.toFlightEntity(
     checksumSha1 = checksumSha1,
     importedAt = importedAt,
     sourceType = sourceType,
+    flightSite = header?.flightSite,
 )

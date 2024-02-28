@@ -32,6 +32,8 @@ class IGCParserTest : BaseTest() {
                 flightSite = "?",
                 pilotInCharge = "John Doe",
                 gliderType = "ADVANCE Alpha 7",
+                loggerHardware = "Google Pixel 5 13",
+                loggerVersion = "0.9.8.7.1",
             )
         }
     }
@@ -52,6 +54,8 @@ class IGCParserTest : BaseTest() {
                 flightSite = "Norma",
                 pilotInCharge = "Jane Doe",
                 gliderType = "OZONE Zeno",
+                loggerHardware = "CUBOT CUBOT DINOSAUR 6.0",
+                loggerVersion = "0.8.2-beta",
             )
         }
     }
@@ -71,6 +75,8 @@ class IGCParserTest : BaseTest() {
                 fixAccuraceMeters = 15,
                 pilotInCharge = "Max Mustermann",
                 gliderType = "Ventus 3T",
+                loggerHardware = "LXNAV,LX9070PF",
+                loggerVersion = "9.0",
             )
         }
     }

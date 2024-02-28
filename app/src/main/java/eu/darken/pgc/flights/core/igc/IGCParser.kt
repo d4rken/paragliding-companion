@@ -75,6 +75,8 @@ class IGCParser @Inject constructor() {
         val flightSite: String? = null,
         val pilotInCharge: String? = null,
         val gliderType: String? = null,
+        val loggerHardware: String? = null,
+        val loggerVersion: String? = null,
     ) {
 
         fun isValid() = flightDay != null
@@ -87,30 +89,40 @@ class IGCParser @Inject constructor() {
                 var recordedAt: LocalDate? = null
                 var flightDayNumber: Int? = null
 
-                val datePattern = Regex("^(?:HFDTE|HFDTEDATE:)(\\w{6}),?(\\d+)?$")
-                hlines.firstNotNullOfOrNull { datePattern.matchEntire(it) }?.let { match ->
+                val dateR = Regex("^(?:HFDTE|HFDTEDATE:)(\\w{6}),?(\\d+)?$")
+                hlines.firstNotNullOfOrNull { dateR.matchEntire(it) }?.let { match ->
                     recordedAt = LocalDate.parse(match.groupValues[1], DateTimeFormatter.ofPattern("ddMMyy"))
                     flightDayNumber = match.groups[2]?.value?.toInt()
                 }
 
-                val fixAccuracyPattern = Regex("^HFFXA(\\d+?)$")
+                val fixAccuracyR = Regex("^HFFXA(\\d+?)$")
                 val fixAccuraceMeters: Int? = hlines
-                    .firstNotNullOfOrNull { fixAccuracyPattern.matchEntire(it) }
+                    .firstNotNullOfOrNull { fixAccuracyR.matchEntire(it) }
                     ?.let { match -> match.groupValues[1].toInt() }
 
-                val flightSitePattern = Regex("^HOSITSite:(.+)$", RegexOption.IGNORE_CASE)
+                val flightSiteR = Regex("^HOSITSite:(.+)$", RegexOption.IGNORE_CASE)
                 val flightSite: String? = hlines
-                    .firstNotNullOfOrNull { flightSitePattern.matchEntire(it) }
+                    .firstNotNullOfOrNull { flightSiteR.matchEntire(it) }
                     ?.let { match -> match.groupValues[1] }
 
-                val pilotInChargePattern = Regex("^(?:HFPLTPILOT|HFPLTPILOTINCHARGE):(.+)$", RegexOption.IGNORE_CASE)
+                val pilotInChargeR = Regex("^(?:HFPLTPILOT|HFPLTPILOTINCHARGE):(.+)$", RegexOption.IGNORE_CASE)
                 val pilotInCharge: String? = hlines
-                    .firstNotNullOfOrNull { pilotInChargePattern.matchEntire(it) }
+                    .firstNotNullOfOrNull { pilotInChargeR.matchEntire(it) }
                     ?.let { match -> match.groupValues[1] }
 
-                val glideTypePattern = Regex("^HFGTYGLIDERTYPE:(.+?)$")
+                val glideTypeP = Regex("^HFGTYGLIDERTYPE:(.+?)$")
                 val glidertype: String? = hlines
-                    .firstNotNullOfOrNull { glideTypePattern.matchEntire(it) }
+                    .firstNotNullOfOrNull { glideTypeP.matchEntire(it) }
+                    ?.let { match -> match.groupValues[1] }
+
+                val loggerHardwareR = Regex("^HFFTYFRTYPE:(.+?)$")
+                val loggerHardware: String? = hlines
+                    .firstNotNullOfOrNull { loggerHardwareR.matchEntire(it) }
+                    ?.let { match -> match.groupValues[1] }
+
+                val loggerVersionR = Regex("^HFRFWFIRMWAREVERSION:(.+?)$")
+                val loggerVersion: String? = hlines
+                    .firstNotNullOfOrNull { loggerVersionR.matchEntire(it) }
                     ?.let { match -> match.groupValues[1] }
 
                 return HRecord(
@@ -120,6 +132,8 @@ class IGCParser @Inject constructor() {
                     flightSite = flightSite,
                     pilotInCharge = pilotInCharge,
                     gliderType = glidertype,
+                    loggerHardware = loggerHardware,
+                    loggerVersion = loggerVersion,
                 )
             }
         }

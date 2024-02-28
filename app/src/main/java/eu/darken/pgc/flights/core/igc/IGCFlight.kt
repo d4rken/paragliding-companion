@@ -11,5 +11,5 @@ data class IGCFlight(
     override val duration: Duration?
         get() = null
     override val location: String?
-        get() = null
+        get() = igcFlightEntity.flightSite
 }
