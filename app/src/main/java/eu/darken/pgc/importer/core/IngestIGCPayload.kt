@@ -9,6 +9,7 @@ data class IngestIGCPayload(
 ) {
     enum class SourceType {
         XCTRACK,
+        SKYTRAXX,
         UNKNOWN,
     }
 }

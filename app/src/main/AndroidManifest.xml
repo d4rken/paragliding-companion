@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <uses-feature
+        android:name="android.hardware.usb.host"
+        android:required="false" />
+
     <application
         android:name="eu.darken.pgc.App"
         android:allowBackup="true"

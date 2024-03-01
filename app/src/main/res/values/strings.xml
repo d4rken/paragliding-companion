@@ -80,6 +80,12 @@
     <string name="importer_reparse_changes">%d flights with changed data</string>
     <string name="importer_reparse_data_label">Reparse existing data</string>
 
+    <string name="importer_usb_import_title">Import from attached USB device</string>
+    <string name="importer_usb_import_start_desc1">Import all flight data from an attached USB device.</string>
+    <string name="importer_usb_import_start_desc2">Duplicate flights are skipped, only new and unique flights are imported.</string>
+    <string name="importer_usb_import_start_action">Start import</string>
+    <string name="importer_usb_import_result_msg">%d new flights, %d duplicate, %d failed</string>
+
     <string name="flights_dash_global_title">Overview</string>
     <string name="flights_dash_global_count_msg">Total flights: %d</string>
     <string name="flights_dash_global_hours_msg">Flight hours: %.2f</string>

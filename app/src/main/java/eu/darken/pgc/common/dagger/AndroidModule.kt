@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationManager
 import android.content.ContentResolver
 import android.content.Context
+import android.hardware.usb.UsbManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -21,6 +22,10 @@ class AndroidModule {
     @Provides
     @Singleton
     fun contentResolver(context: Context): ContentResolver = context.contentResolver
+
+    @Provides
+    @Singleton
+    fun usbManager(context: Context): UsbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
 
     @Provides
     @Singleton
