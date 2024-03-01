@@ -15,6 +15,9 @@
         <action
             android:id="@+id/action_dashboardFragment_to_ingesterFragment"
             app:destination="@id/ingesterFragment" />
+        <action
+            android:id="@+id/action_dashboardFragment_to_flightsListFragment"
+            app:destination="@id/flightsListFragment" />
     </fragment>
     <fragment
         android:id="@+id/settingsContainerFragment"
@@ -24,5 +27,9 @@
         android:id="@+id/ingesterFragment"
         android:name="eu.darken.pgc.importer.ui.ImporterFragment"
         tools:layout="@layout/importer_fragment" />
+    <fragment
+        android:id="@+id/flightsListFragment"
+        android:name="eu.darken.pgc.flights.ui.list.FlightsListFragment"
+        tools:layout="@layout/flights_list_fragment" />
 
 </navigation>

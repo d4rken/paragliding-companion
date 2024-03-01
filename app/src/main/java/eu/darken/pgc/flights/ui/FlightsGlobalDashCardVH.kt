@@ -1,6 +1,7 @@
 package eu.darken.pgc.flights.ui
 
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import eu.darken.pgc.R
 import eu.darken.pgc.common.lists.binding
 import eu.darken.pgc.databinding.FlightsDashGlobalItemBinding
@@ -24,8 +25,18 @@ class FlightsGlobalDashCardVH(parent: ViewGroup) :
         globalCount.text = getString(R.string.flights_dash_global_count_msg, stats.globalCount)
         globalHours.text = getString(R.string.flights_dash_global_hours_msg, stats.flightHours.toMinutes() / 60f)
         globalLocations.text = getString(R.string.flights_dash_global_locations_msg, stats.locations)
+        globalLongest.apply {
+            isVisible = stats.globalLongest != null
+            stats.globalLongest?.let { dur ->
+                text = getString(R.string.flights_dash_global_longest_msg, dur.toMinutes() / 60f)
+            }
+        }
+        globalFurthest.apply {
+            isVisible = stats.globalFurthest != null
+            text = getString(R.string.flights_dash_global_furthest_msg, stats.globalFurthest ?: "")
+        }
 
-        importAction.apply {
+        root.apply {
             setOnClickListener { item.onView() }
         }
     }

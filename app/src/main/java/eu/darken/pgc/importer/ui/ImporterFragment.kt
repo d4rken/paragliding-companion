@@ -19,8 +19,6 @@ import eu.darken.pgc.common.debug.logging.logTag
 import eu.darken.pgc.common.uix.Fragment3
 import eu.darken.pgc.common.viewbinding.viewBinding
 import eu.darken.pgc.databinding.ImporterFragmentBinding
-import eu.darken.pgc.main.ui.dashboard.DashboardAdapter
-import javax.inject.Inject
 import kotlin.math.roundToInt
 
 @AndroidEntryPoint
@@ -28,8 +26,6 @@ class ImporterFragment : Fragment3(R.layout.importer_fragment) {
 
     override val vm: ImporterFragmentVM by viewModels()
     override val ui: ImporterFragmentBinding by viewBinding()
-
-    @Inject lateinit var dashAdapter: DashboardAdapter
 
     private lateinit var pickerLauncher: ActivityResultLauncher<Intent>
 
@@ -71,42 +67,69 @@ class ImporterFragment : Fragment3(R.layout.importer_fragment) {
         ui.manualImportAction.setOnClickListener { vm.startSelection() }
 
         vm.state.observe2(ui) { state ->
-            when (state) {
-                is ImporterFragmentVM.State.Start -> {
+            when (val manual = state.manualImport) {
+                is ImporterFragmentVM.ManualImportState.Start -> {
                     manualImportPrimary.text = getString(R.string.importer_manual_import_start_desc1)
                     manualImportSecondary.text = getString(R.string.importer_manual_import_start_desc2)
                     manualImportProgress.isVisible = false
                     manualImportAction.isVisible = true
                 }
 
-                is ImporterFragmentVM.State.Progress -> {
+                is ImporterFragmentVM.ManualImportState.Progress -> {
                     manualImportPrimary.text = getString(R.string.importer_progress_label)
-                    manualImportSecondary.text = state.progressMsg.get(requireContext())
+                    manualImportSecondary.text = manual.progressMsg.get(requireContext())
 
                     manualImportProgress.apply {
-                        isIndeterminate = state.max == -1
-                        progress = state.current
-                        max = state.max
+                        isIndeterminate = manual.max == -1
+                        progress = manual.current
+                        max = manual.max
                         isVisible = true
                     }
                     manualImportProgressLabel.text =
-                        "${((state.current.toDouble() / state.max.toDouble()) * 100).roundToInt()}%"
+                        "${((manual.current.toDouble() / manual.max.toDouble()) * 100).roundToInt()}%"
                     manualImportAction.isVisible = false
                 }
 
-                is ImporterFragmentVM.State.Result -> {
+                is ImporterFragmentVM.ManualImportState.Result -> {
                     manualImportPrimary.text = getString(
                         R.string.importer_manual_import_result_msg,
-                        state.success.size,
-                        state.skipped.size,
-                        state.failed.size
+                        manual.success.size,
+                        manual.skipped.size,
+                        manual.failed.size
                     )
 
-                    manualImportSecondary.text = state.failed
+                    manualImportSecondary.text = manual.failed
                         .takeIf { it.isNotEmpty() }
                         ?.joinToString("\n---\n") { "${it.first}: ${it.second}" }
                     manualImportProgress.isVisible = false
                     manualImportAction.isVisible = true
+                }
+            }
+            when (val reparser = state.reparserState) {
+                is ImporterFragmentVM.ReparserState.Start -> {
+                    reparseCard.isVisible = false
+                }
+
+                is ImporterFragmentVM.ReparserState.Progress -> {
+                    reparseCard.isVisible = true
+                    reparsePrimary.text = getString(R.string.importer_reparse_progress)
+                    reparseSecondary.text = reparser.progressMsg.get(requireContext())
+
+                    reparseProgress.apply {
+                        isIndeterminate = reparser.max == -1
+                        progress = reparser.current
+                        max = reparser.max
+                        isVisible = true
+                    }
+                    reparseProgressLabel.text =
+                        "${((reparser.current.toDouble() / reparser.max.toDouble()) * 100).roundToInt()}%"
+                }
+
+                is ImporterFragmentVM.ReparserState.Result -> {
+                    reparseCard.isVisible = true
+                    reparseProgress.isVisible = false
+                    reparsePrimary.text = getString(R.string.importer_reparse_changes, reparser.changes)
+                    reparseSecondary.text = null
                 }
             }
         }

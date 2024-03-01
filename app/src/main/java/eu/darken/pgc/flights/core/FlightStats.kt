@@ -26,6 +26,8 @@ class FlightStats @Inject constructor(
                     .mapNotNull { it.location }
                     .toSet()
                     .size,
+                globalLongest = flights.flights.mapNotNull { it.duration }.maxOrNull(),
+                globalFurthest = flights.flights.mapNotNull { it.distance }.maxOrNull(),
             )
         }
         .replayingShare(scope)
@@ -34,6 +36,8 @@ class FlightStats @Inject constructor(
         val globalCount: Int,
         val flightHours: Duration,
         val locations: Int,
+        val globalLongest: Duration?,
+        val globalFurthest: Long?,
     )
 
     companion object {

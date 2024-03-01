@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import eu.darken.pgc.common.room.DurationConverter
 import eu.darken.pgc.common.room.InstantConverter
+import eu.darken.pgc.common.room.OffsetDateTimeConverter
 import eu.darken.pgc.flights.core.igc.IGCFlightEntity
 import eu.darken.pgc.flights.core.igc.IGCFlightsDao
 
@@ -21,6 +22,7 @@ import eu.darken.pgc.flights.core.igc.IGCFlightsDao
 @TypeConverters(
     InstantConverter::class,
     DurationConverter::class,
+    OffsetDateTimeConverter::class,
     FlightIdTypeConverter::class,
 )
 abstract class FlightsRoomDb : RoomDatabase() {

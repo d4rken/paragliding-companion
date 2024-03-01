@@ -98,14 +98,24 @@ class IGCParser @Inject constructor() {
             ?.let { match -> match.groupValues[1] }
 
         val loggerHardwareR = Regex("^HFFTYFRTYPE:(.+?)$")
-        val loggerHardware: String? = hlines
+        val loggerType: String? = hlines
             .firstNotNullOfOrNull { loggerHardwareR.matchEntire(it) }
             ?.let { match -> match.groupValues[1] }
 
-        val loggerVersionR = Regex("^HFRFWFIRMWAREVERSION:(.+?)$")
-        val loggerVersion: String? = hlines
-            .firstNotNullOfOrNull { loggerVersionR.matchEntire(it) }
+        val loggerFirmwareVersionR = Regex("^HFRFWFIRMWAREVERSION:(.+?)$")
+        val loggerFirmwareVersion: String? = hlines
+            .firstNotNullOfOrNull { loggerFirmwareVersionR.matchEntire(it) }
             ?.let { match -> match.groupValues[1] }
+
+        val loggerHardwareVersionR = Regex("^HFRHWHARDWAREVERSION:(.+?)$")
+        val loggerHardwareVersion: String? = hlines
+            .firstNotNullOfOrNull { loggerHardwareVersionR.matchEntire(it) }
+            ?.let { match -> match.groupValues[1] }
+
+        val timezoneOffsetR = Regex("^(?:HFTZN|HFTZNTIMEZONE:)(\\d+?)(\\.?\\d+?)$")
+        val timezoneOffset: Float? = hlines
+            .firstNotNullOfOrNull { timezoneOffsetR.matchEntire(it) }
+            ?.let { match -> match.groupValues[1].toFloat() }
 
         return IGCFile.HRecord(
             flightDay = recordedAt,
@@ -114,8 +124,10 @@ class IGCParser @Inject constructor() {
             flightSite = flightSite,
             pilotInCharge = pilotInCharge,
             gliderType = glidertype,
-            loggerHardware = loggerHardware,
-            loggerVersion = loggerVersion,
+            loggerType = loggerType,
+            loggerHardwareVersion = loggerHardwareVersion,
+            loggerFirmwareVersion = loggerFirmwareVersion,
+            timezoneOffset = timezoneOffset,
         )
     }
 

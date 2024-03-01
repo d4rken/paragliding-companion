@@ -79,9 +79,7 @@ class DashboardFragmentVM @Inject constructor(
         } else {
             FlightsGlobalDashCardVH.Item(
                 stats = flightStats,
-                onView = {
-
-                },
+                onView = { DashboardFragmentDirections.actionDashboardFragmentToFlightsListFragment().navigate() },
             ).run { items.add(this) }
         }
 

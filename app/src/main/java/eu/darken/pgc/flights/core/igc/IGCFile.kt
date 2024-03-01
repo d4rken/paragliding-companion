@@ -3,7 +3,6 @@ package eu.darken.pgc.flights.core.igc
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalTime
-import kotlin.math.abs
 
 data class IGCFile(
     val aRecord: ARecord?,
@@ -23,7 +22,7 @@ data class IGCFile(
     }
 
     val launch: BRecord?
-        get() = bRecords.firstOrNull { abs(it.altitude - bRecords.first().altitude) >= 5 }
+        get() = bRecords.firstOrNull()
 
     val landing: BRecord?
         get() = bRecords.lastOrNull()
@@ -51,8 +50,10 @@ data class IGCFile(
         val flightSite: String? = null,
         val pilotInCharge: String? = null,
         val gliderType: String? = null,
-        val loggerHardware: String? = null,
-        val loggerVersion: String? = null,
+        val loggerType: String? = null,
+        val loggerHardwareVersion: String? = null,
+        val loggerFirmwareVersion: String? = null,
+        val timezoneOffset: Float? = null,
     ) {
 
         fun isValid() = flightDay != null

@@ -25,6 +25,8 @@ class FlightsDatabase @Inject constructor(
             database.flightsIgc()
         )
 
+    suspend fun flightCount(): Int = daos.sumOf { it.flightCount() }
+
     val flightsIgc: IGCFlightsDao
         get() = database.flightsIgc()
 

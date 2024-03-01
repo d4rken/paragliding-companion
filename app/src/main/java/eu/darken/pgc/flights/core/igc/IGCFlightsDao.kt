@@ -13,6 +13,9 @@ interface IGCFlightsDao : FlightsDao {
     @Query("SELECT * FROM flights_igc")
     suspend fun getAll(): List<IGCFlightEntity>
 
+    @Query("SELECT COUNT(*) FROM flights_igc")
+    override suspend fun flightCount(): Int
+
     @Query("SELECT * FROM flights_igc ")
     fun waterfall(): Flow<List<IGCFlightEntity>>
 

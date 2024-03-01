@@ -34,8 +34,9 @@ class IGCParserTest : BaseTest() {
                 flightSite = "?",
                 pilotInCharge = "John Doe",
                 gliderType = "ADVANCE Alpha 7",
-                loggerHardware = "Google Pixel 5 13",
-                loggerVersion = "0.9.8.7.1",
+                loggerType = "Google Pixel 5 13",
+                loggerFirmwareVersion = "0.9.8.7.1",
+                loggerHardwareVersion = null,
             )
             bRecords[0] shouldBe IGCFile.BRecord(
                 time = LocalTime.of(16, 28, 18),
@@ -81,8 +82,9 @@ class IGCParserTest : BaseTest() {
                 flightSite = "Norma",
                 pilotInCharge = "Jane Doe",
                 gliderType = "OZONE Zeno",
-                loggerHardware = "CUBOT CUBOT DINOSAUR 6.0",
-                loggerVersion = "0.8.2-beta",
+                loggerType = "CUBOT CUBOT DINOSAUR 6.0",
+                loggerHardwareVersion = null,
+                loggerFirmwareVersion = "0.8.2-beta",
             )
         }
     }
@@ -102,8 +104,10 @@ class IGCParserTest : BaseTest() {
                 fixAccuraceMeters = 15,
                 pilotInCharge = "Max Mustermann",
                 gliderType = "Ventus 3T",
-                loggerHardware = "LXNAV,LX9070PF",
-                loggerVersion = "9.0",
+                loggerType = "LXNAV,LX9070PF",
+                loggerHardwareVersion = "23",
+                loggerFirmwareVersion = "9.0",
+                timezoneOffset = 1.0f,
             )
         }
     }

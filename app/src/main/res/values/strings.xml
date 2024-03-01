@@ -75,10 +75,18 @@
     <string name="importer_manual_import_select_action">Select files</string>
     <string name="importer_manual_import_result_msg">%d new flights, %d duplicate, %d failed</string>
     <string name="importer_progress_label">Importing flights</string>
+    <string name="importer_reparse_title">Reparser</string>
+    <string name="importer_reparse_progress">Reparsing flights</string>
+    <string name="importer_reparse_changes">%d flights with changed data</string>
+    <string name="importer_reparse_data_label">Reparse existing data</string>
 
     <string name="flights_dash_global_title">Overview</string>
     <string name="flights_dash_global_count_msg">Total flights: %d</string>
     <string name="flights_dash_global_hours_msg">Flight hours: %.2f</string>
     <string name="flights_dash_global_locations_msg">Known locations: %d</string>
-    <string name="flights_reparse_data_label">Reparse existing data</string>
+    <string name="flights_dash_global_longest_msg">Longest flight: %.2f hours</string>
+    <string name="flights_dash_global_furthest_msg">Most distance traveled: %s</string>
+    <string name="flights_title">Flights</string>
+    <string name="flights_list_item_duration">%dm %ds</string>
+    <string name="flights_list_item_unknown_location">Unknown location</string>
 </resources>

@@ -1,5 +1,7 @@
 package eu.darken.pgc.importer.core
 
+import eu.darken.pgc.common.ca.CaString
+import eu.darken.pgc.common.ca.toCaString
 import eu.darken.pgc.common.debug.logging.Logging.Priority.ERROR
 import eu.darken.pgc.common.debug.logging.Logging.Priority.INFO
 import eu.darken.pgc.common.debug.logging.Logging.Priority.VERBOSE
@@ -58,10 +60,6 @@ class Ingester @Inject constructor(
         val igcFlightEntity = parsed.toFlightEntity(
             flightId = newId,
             checksumSha1 = sha1,
-            sourceType = when (payload.sourceType) {
-                IngestIGCPayload.SourceType.XCTRACK -> Flight.SourceType.XCTRACK
-                IngestIGCPayload.SourceType.UNKNOWN -> Flight.SourceType.UNKNOWN
-            }
         )
 
         database.flightsIgc.insert(igcFlightEntity)
@@ -73,12 +71,14 @@ class Ingester @Inject constructor(
         return true
     }
 
-    suspend fun reingest() = lock.withLock {
+    suspend fun reingest(onProgress: (CaString) -> Unit) = lock.withLock {
         log(TAG) { "reingest()" }
         val igcFlights = database.flightsIgc.getAll()
 
+        var changes = 0
         igcFlights.forEachIndexed { index, flight ->
             log(TAG, VERBOSE) { "Reingesting: $index: $flight" }
+            onProgress(flight.flightAt.toString().toCaString())
             val igcRaw = igcStorage.getRaw(flight.flightId)!!
 
             // Parse early, catch invalid files
@@ -91,15 +91,16 @@ class Ingester @Inject constructor(
                     flightId = oldEntity.flightId,
                     importedAt = oldEntity.importedAt,
                     checksumSha1 = oldEntity.checksumSha1,
-                    sourceType = oldEntity.sourceType,
                 )
                 if (oldEntity != newEntity) {
                     log(TAG, INFO) { "Before (#$index): $oldEntity" }
                     log(TAG, INFO) { "After  (#$index): $newEntity" }
+                    changes++
                 }
                 database.flightsIgc.update(newEntity)
             }
         }
+        changes
     }
 
     private fun Source.toFlightChecksum(): String = MessageDigest.getInstance("SHA-1")
@@ -122,6 +123,8 @@ class Ingester @Inject constructor(
         log(TAG, ERROR) { "Parsing failed for $this: ${e.asLog()}" }
         throw IGCException(cause = e, "Parsing failed.")
     }
+
+    suspend fun flightCount(): Int = database.flightCount()
 
     companion object {
         internal val TAG = logTag("Importer", "Ingester")

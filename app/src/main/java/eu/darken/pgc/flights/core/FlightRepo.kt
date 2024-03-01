@@ -24,8 +24,7 @@ class FlightRepo @Inject constructor(
                 flights = flightEntities.map { entity ->
                     IGCFlight(
                         id = entity.flightId,
-                        igcFlightEntity = entity,
-                        sourceType = Flight.SourceType.XCTRACK,
+                        entity = entity,
                     )
                 }.toSet()
             )

@@ -34,14 +34,17 @@ class ImporterFragmentVM @Inject constructor(
 
     val events = SingleLiveEvent<ImporterEvents>()
 
-    private val progressHolder = MutableStateFlow<State.Progress?>(null)
-    private val resultHolder = MutableStateFlow<State.Result?>(null)
+    private val manualImportState = MutableStateFlow<ManualImportState>(ManualImportState.Start())
+    private val reparserState = MutableStateFlow<ReparserState>(ReparserState.Start())
 
     val state = combine(
-        progressHolder,
-        resultHolder,
-    ) { progress, result ->
-        (progress ?: result) ?: State.Start()
+        manualImportState,
+        reparserState,
+    ) { manualState, reparserState ->
+        ImporterState(
+            manualImport = manualState,
+            reparserState = reparserState
+        )
     }.asLiveData2()
 
     fun startSelection() = launch {
@@ -55,11 +58,10 @@ class ImporterFragmentVM @Inject constructor(
 
     fun startIngestion(uris: Set<Uri>) = launch {
         log(TAG) { "startIngestions(uris=${uris.size})" }
-        progressHolder.value = State.Progress(
+        manualImportState.value = ManualImportState.Progress(
             max = uris.size,
             progressMsg = R.string.general_progress_loading.toCaString()
         )
-        resultHolder.value = null
 
         val success = mutableListOf<Uri>()
         val skipped = mutableListOf<Uri>()
@@ -71,7 +73,7 @@ class ImporterFragmentVM @Inject constructor(
             .filter { !done.contains(it) }
             .filter { MimeTypeMap.getFileExtensionFromUrl(it.path!!) == "igc" }
             .forEach { uri ->
-                progressHolder.value = progressHolder.value?.copy(
+                manualImportState.value = (manualImportState.value as ManualImportState.Progress).copy(
                     progressMsg = (uri.lastPathSegment ?: uri.toString()).toCaString()
                 )
 
@@ -106,7 +108,7 @@ class ImporterFragmentVM @Inject constructor(
 
                 done.add(uri)
 
-                progressHolder.value = progressHolder.value?.let {
+                manualImportState.value = (manualImportState.value as ManualImportState.Progress).let {
                     it.copy(current = it.current + 1)
                 }
             }
@@ -118,36 +120,73 @@ class ImporterFragmentVM @Inject constructor(
                 failed.add(it to IllegalArgumentException("Unknown data type"))
             }
 
-        resultHolder.value = State.Result(
+        manualImportState.value = ManualImportState.Result(
             success = success,
             skipped = skipped,
             failed = failed
         )
-        progressHolder.value = null
     }
 
     fun reparse() = launch {
         log(TAG) { "reparse()" }
-        ingester.reingest()
+        reparserState.value = ReparserState.Progress(
+            max = ingester.flightCount(),
+            progressMsg = R.string.general_progress_loading.toCaString()
+        )
+
+        val changed = ingester.reingest { progress ->
+            reparserState.value = (reparserState.value as ReparserState.Progress).let {
+                it.copy(
+                    progressMsg = progress,
+                    current = it.current + 1
+                )
+            }
+        }
+
+        reparserState.value = ReparserState.Result(
+            changes = changed
+        )
     }
 
-    sealed interface State {
+    data class ImporterState(
+        val manualImport: ManualImportState = ManualImportState.Start(),
+        val reparserState: ReparserState = ReparserState.Start()
+    )
+
+    sealed interface ReparserState {
         data class Start(
             val idle: Boolean = true
-        ) : State
+        ) : ReparserState
 
 
         data class Progress(
             val current: Int = 0,
             val max: Int = -1,
             val progressMsg: CaString,
-        ) : State
+        ) : ReparserState
+
+        data class Result(
+            val changes: Int,
+        ) : ReparserState
+    }
+
+    sealed interface ManualImportState {
+        data class Start(
+            val idle: Boolean = true
+        ) : ManualImportState
+
+
+        data class Progress(
+            val current: Int = 0,
+            val max: Int = -1,
+            val progressMsg: CaString,
+        ) : ManualImportState
 
         data class Result(
             val success: List<Uri>,
             val skipped: List<Uri>,
             val failed: List<Pair<Uri, Exception>>,
-        ) : State
+        ) : ManualImportState
     }
 
     companion object {
