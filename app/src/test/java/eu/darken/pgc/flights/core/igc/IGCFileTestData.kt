@@ -16,4 +16,7 @@ object IGCFileTestData {
 
     val largeComplexFile: ByteString
         get() = "./src/test/assets/testflights/ComplexXPSoaring.igc".readAsset()
+
+    val smallSkytraxx21: ByteString
+        get() = "./src/test/assets/testflights/SmallSkyTraxx2.1.igc".readAsset()
 }

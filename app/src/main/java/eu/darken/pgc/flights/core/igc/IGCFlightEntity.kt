@@ -48,6 +48,7 @@ fun IGCFile.toFlightEntity(
     gliderType = header?.gliderType,
     loggerInfo = when (aRecord?.manufacturerCode) {
         "XCT" -> "XCTrack (${header?.loggerFirmwareVersion}) @ ${header?.loggerType}"
+        "XSX" -> "SKYTRAXX ${header?.loggerHardwareVersion} (${header?.loggerFirmwareVersion})"
         else -> "${header?.loggerType} (${header?.loggerFirmwareVersion}) @ ${header?.loggerHardwareVersion}"
     },
 )

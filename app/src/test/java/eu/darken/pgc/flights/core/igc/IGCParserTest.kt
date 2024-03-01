@@ -111,4 +111,28 @@ class IGCParserTest : BaseTest() {
             )
         }
     }
+
+
+    @Test
+    fun `parse Skytraxx 21`() = runTest {
+        val igcFile = doParse(IGCFileTestData.smallSkytraxx21)
+        igcFile.apply {
+            aRecord shouldBe IGCFile.ARecord(
+                manufacturerCode = "XSX",
+                loggerCode = "004",
+                idExtension = "SKYTRAXX",
+            )
+            header shouldBe IGCFile.HRecord(
+                flightDay = LocalDate.of(2023, 8, 11),
+                flightDayNumber = null,
+                fixAccuraceMeters = null,
+                pilotInCharge = "SvenR",
+                gliderType = "Epsilon",
+                loggerType = null,
+                loggerHardwareVersion = "2.1",
+                loggerFirmwareVersion = "202302061503",
+                timezoneOffset = 2.0f,
+            )
+        }
+    }
 }

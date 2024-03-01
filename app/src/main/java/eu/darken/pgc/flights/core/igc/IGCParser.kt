@@ -59,7 +59,7 @@ class IGCParser @Inject constructor() {
             IGCFile.ARecord(
                 manufacturerCode = result.groups[1]?.value,
                 loggerCode = result.groups[2]?.value,
-                idExtension = result.groups[3]?.value,
+                idExtension = result.groups[3]?.value?.trim(),
             )
         }
     }
@@ -112,7 +112,7 @@ class IGCParser @Inject constructor() {
             .firstNotNullOfOrNull { loggerHardwareVersionR.matchEntire(it) }
             ?.let { match -> match.groupValues[1] }
 
-        val timezoneOffsetR = Regex("^(?:HFTZN|HFTZNTIMEZONE:)(\\d+?)(\\.?\\d+?)$")
+        val timezoneOffsetR = Regex("^(?:HFTZNTIMEZONE:|HFTZN)(.*?)$")
         val timezoneOffset: Float? = hlines
             .firstNotNullOfOrNull { timezoneOffsetR.matchEntire(it) }
             ?.let { match -> match.groupValues[1].toFloat() }
