@@ -103,6 +103,7 @@ class IGCParserTest : BaseTest() {
                 flightDayNumber = null,
                 fixAccuraceMeters = 15,
                 pilotInCharge = "Max Mustermann",
+                flightSite = null,
                 gliderType = "Ventus 3T",
                 loggerType = "LXNAV,LX9070PF",
                 loggerHardwareVersion = "23",
@@ -111,7 +112,6 @@ class IGCParserTest : BaseTest() {
             )
         }
     }
-
 
     @Test
     fun `parse Skytraxx 21`() = runTest {
@@ -128,6 +128,7 @@ class IGCParserTest : BaseTest() {
                 fixAccuraceMeters = null,
                 pilotInCharge = "SvenR",
                 gliderType = "Epsilon",
+                flightSite = "Wasserkuppe Südhang (Ba",
                 loggerType = null,
                 loggerHardwareVersion = "2.1",
                 loggerFirmwareVersion = "202302061503",

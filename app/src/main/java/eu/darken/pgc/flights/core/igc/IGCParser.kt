@@ -82,7 +82,7 @@ class IGCParser @Inject constructor() {
             .firstNotNullOfOrNull { fixAccuracyR.matchEntire(it) }
             ?.let { match -> match.groupValues[1].toInt() }
 
-        val flightSiteR = Regex("^HOSITSite:(.+)$", RegexOption.IGNORE_CASE)
+        val flightSiteR = Regex("^(?:HOSITSite:|HFSITSITE:)(.+)$", RegexOption.IGNORE_CASE)
         val flightSite: String? = hlines
             .firstNotNullOfOrNull { flightSiteR.matchEntire(it) }
             ?.let { match -> match.groupValues[1] }
