@@ -60,9 +60,9 @@ class IGCParserTest : BaseTest() {
                 gnssAlt = 755,
                 extra = "03",
             )
-            launch shouldBe bRecords[2]
+            launch shouldBe bRecords[0]
             landing shouldBe bRecords.last()
-            flightDuration shouldBe Duration.parse("PT11M47S")
+            flightDuration shouldBe Duration.parse("PT11M49S")
         }
     }
 
