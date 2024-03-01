@@ -12,6 +12,7 @@ import eu.darken.pgc.common.flow.DynamicStateFlow
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.launch
@@ -54,11 +55,12 @@ abstract class ViewModel2(
         scope: CoroutineScope = viewModelScope,
         context: CoroutineContext = getVMContext(),
         block: suspend CoroutineScope.() -> Unit
-    ) {
-        try {
+    ): Job? {
+        return try {
             scope.launch(context = context, block = block)
         } catch (e: CancellationException) {
             log(TAG, WARN) { "launch()ed coroutine was canceled (scope=$scope): ${e.asLog()}" }
+            null
         }
     }
 

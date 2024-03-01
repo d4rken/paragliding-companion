@@ -23,10 +23,13 @@ import eu.darken.pgc.importer.core.IngestIGCPayload
 import eu.darken.pgc.importer.core.Ingester
 import eu.darken.pgc.importer.core.MassStorageCrawler
 import eu.darken.pgc.importer.core.UsbDevicesProvider
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.isActive
 import me.jahnen.libaums.core.fs.UsbFile
 import me.jahnen.libaums.core.fs.UsbFileInputStream
 import okhttp3.internal.closeQuietly
@@ -157,6 +160,7 @@ class ImporterFragmentVM @Inject constructor(
         )
     }
 
+    private var usbImportJob: Job? = null
     fun importUsb(device: UsbDevice?) = launch {
         log(TAG) { "importUsb($device)" }
         if (device == null) {
@@ -189,6 +193,10 @@ class ImporterFragmentVM @Inject constructor(
         )
 
         igcFiles.forEach { file ->
+            if (!isActive) {
+                usbImportState.value = UsbImportstate.Start()
+                throw CancellationException()
+            }
             log(TAG) { "importUsb(...): Ingesting $file" }
             usbImportState.value = (usbImportState.value as UsbImportstate.Progress).copy(
                 progressMsg = file.absolutePath.toCaString()
@@ -227,6 +235,10 @@ class ImporterFragmentVM @Inject constructor(
             skipped = skipped,
             failed = failed
         )
+    }.also { usbImportJob = it }
+
+    fun cancelImportUsb() {
+        usbImportJob?.cancel()
     }
 
     data class ImporterState(

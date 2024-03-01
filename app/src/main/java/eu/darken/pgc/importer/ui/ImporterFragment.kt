@@ -185,7 +185,7 @@ class ImporterFragment : Fragment3(R.layout.importer_fragment) {
                             usbImportAction.isEnabled = selectedUsbDevice != null
                         }
                     }
-
+                    usbCancelAction.isVisible = false
                     usbImportAction.setOnClickListener { vm.importUsb(selectedUsbDevice!!) }
                 }
 
@@ -203,6 +203,10 @@ class ImporterFragment : Fragment3(R.layout.importer_fragment) {
                         "${((usb.current.toDouble() / usb.max.toDouble()) * 100).roundToInt()}%"
                     usbImportAction.isVisible = false
                     usbImportDeviceGroup.isVisible = false
+                    usbCancelAction.apply {
+                        isVisible = true
+                        setOnClickListener { vm.cancelImportUsb() }
+                    }
                 }
 
                 is ImporterFragmentVM.UsbImportstate.Result -> {
@@ -221,6 +225,7 @@ class ImporterFragment : Fragment3(R.layout.importer_fragment) {
                         isVisible = true
                         setOnClickListener { vm.importUsb(null) }
                     }
+                    usbCancelAction.isVisible = false
                     usbImportDeviceGroup.isVisible = false
                 }
             }
