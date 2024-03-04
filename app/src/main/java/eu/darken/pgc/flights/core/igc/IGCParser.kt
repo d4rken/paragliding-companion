@@ -132,7 +132,7 @@ class IGCParser @Inject constructor() {
     }
 
     private fun parseBRecords(lines: Sequence<String>): List<IGCFile.BRecord> {
-        val regex = Regex("^B(\\w{6})(\\w{7}[NS])(\\w{8}[EW])(\\w)(\\d{5})(\\d{5})(.+)$")
+        val regex = Regex("^B(\\w{6})(\\w{7}[NS])(\\w{8}[EW])(\\w)(\\d{5})(\\d{5})(.*?)\$")
         return lines
             .mapNotNull { regex.matchEntire(it) }
             .map { match ->

@@ -134,6 +134,7 @@ class IGCParserTest : BaseTest() {
                 loggerFirmwareVersion = "202302061503",
                 timezoneOffset = 2.0f,
             )
+            bRecords.size shouldBe 41
         }
     }
 }
