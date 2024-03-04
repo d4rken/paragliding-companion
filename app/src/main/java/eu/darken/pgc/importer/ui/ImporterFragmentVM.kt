@@ -11,7 +11,6 @@ import androidx.lifecycle.SavedStateHandle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.pgc.R
-import eu.darken.pgc.common.ca.CaString
 import eu.darken.pgc.common.ca.toCaString
 import eu.darken.pgc.common.coroutine.DispatcherProvider
 import eu.darken.pgc.common.debug.logging.Logging.Priority.INFO
@@ -21,17 +20,18 @@ import eu.darken.pgc.common.livedata.SingleLiveEvent
 import eu.darken.pgc.common.uix.ViewModel3
 import eu.darken.pgc.importer.core.IngestIGCPayload
 import eu.darken.pgc.importer.core.Ingester
-import eu.darken.pgc.importer.core.MassStorageCrawler
 import eu.darken.pgc.importer.core.UsbDevicesProvider
+import eu.darken.pgc.importer.core.UsbImporter
+import eu.darken.pgc.importer.ui.items.ManualCardVH
+import eu.darken.pgc.importer.ui.items.ManualCardVH.Item.ManualImportState
+import eu.darken.pgc.importer.ui.items.ReparseCardVH
+import eu.darken.pgc.importer.ui.items.ReparseCardVH.Item.ReparserState
+import eu.darken.pgc.importer.ui.items.UsbCardVH
+import eu.darken.pgc.importer.ui.items.UsbCardVH.Item.UsbImportstate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.isActive
-import me.jahnen.libaums.core.fs.UsbFile
-import me.jahnen.libaums.core.fs.UsbFileInputStream
 import okhttp3.internal.closeQuietly
 import okio.source
 import java.io.InputStream
@@ -46,41 +46,55 @@ class ImporterFragmentVM @Inject constructor(
     @ApplicationContext private val context: Context,
     private val usbManager: UsbManager,
     private val usbDevicesProvider: UsbDevicesProvider,
-    private val massStorageCrawler: MassStorageCrawler,
+    private val usbImporter: UsbImporter,
 ) : ViewModel3(dispatcherProvider = dispatcherProvider) {
 
     val events = SingleLiveEvent<ImporterEvents>()
 
-    private val manualImportState = MutableStateFlow<ManualImportState>(ManualImportState.Start())
     private val reparserState = MutableStateFlow<ReparserState>(ReparserState.Start())
+    private val manualImportState = MutableStateFlow<ManualImportState>(ManualImportState.Start())
     private val usbImportState = MutableStateFlow<UsbImportstate>(UsbImportstate.Start())
+    private val selectedDevice = MutableStateFlow(null as UsbDevice?)
 
     val state = combine(
-        manualImportState,
         reparserState,
+        manualImportState,
         usbImportState,
         usbDevicesProvider.devices,
-    ) { manualState, reparserState, usbImportState, usbDevices ->
-        ImporterState(
-            manualImport = manualState,
-            reparserState = reparserState,
-            usbImportState = if (usbImportState is UsbImportstate.Start) {
-                usbImportState.copy(devices = usbDevices)
-            } else {
-                usbImportState
+        selectedDevice,
+    ) { reparserState, manualState, usbImportState, usbDevices, selectedUsb ->
+        val items = mutableListOf<ImporterAdapter.Item>()
+
+        ReparseCardVH.Item(
+            state = reparserState
+        ).takeIf { it.state !is ReparserState.Start }?.run { items.add(this) }
+
+        ManualCardVH.Item(
+            state = manualState,
+            onImport = {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                }
+                events.postValue(ImporterEvents.ShowPicker(intent))
             },
-        )
+            onCancel = { manualImportJob?.cancel() }
+        ).run { items.add(this) }
+
+        UsbCardVH.Item(
+            selectedDevice = selectedUsb,
+            devices = usbDevices.toList(),
+            state = usbImportState,
+            onImport = { importUsb() },
+            onCancel = { usbImportJob?.cancel() },
+            onDeviceSelected = { selectedDevice.value = it }
+        ).run { items.add(this) }
+
+        State(items = items)
     }.asLiveData2()
 
-    fun startSelection() = launch {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "*/*"
-            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-        }
-        events.postValue(ImporterEvents.ShowPicker(intent))
-    }
-
+    private var manualImportJob: Job? = null
     fun importManual(uris: Set<Uri>) = launch {
         log(TAG) { "importManual(uris=${uris.size})" }
         manualImportState.value = ManualImportState.Progress(
@@ -96,9 +110,10 @@ class ImporterFragmentVM @Inject constructor(
             .filter { MimeTypeMap.getFileExtensionFromUrl(it.path!!) == "igc" }
             .forEach { uri ->
                 log(TAG) { "importManual(...): $uri" }
-                manualImportState.value = (manualImportState.value as ManualImportState.Progress).copy(
-                    progressMsg = (uri.lastPathSegment ?: uri.toString()).toCaString()
-                )
+                manualImportState.value =
+                    (manualImportState.value as ManualImportState.Progress).copy(
+                        progressMsg = (uri.lastPathSegment ?: uri.toString()).toCaString()
+                    )
 
                 val dangles = mutableSetOf<InputStream>()
 
@@ -123,9 +138,10 @@ class ImporterFragmentVM @Inject constructor(
                     dangles.forEach { it.closeQuietly() }
                 }
 
-                manualImportState.value = (manualImportState.value as ManualImportState.Progress).let {
-                    it.copy(current = it.current + 1)
-                }
+                manualImportState.value =
+                    (manualImportState.value as ManualImportState.Progress).let {
+                        it.copy(current = it.current + 1)
+                    }
             }
 
         (uris - (success + skipped).toSet()).forEach {
@@ -137,7 +153,7 @@ class ImporterFragmentVM @Inject constructor(
             skipped = skipped,
             failed = failed
         )
-    }
+    }.also { manualImportJob = it }
 
     fun reparse() = launch {
         log(TAG) { "reparse()" }
@@ -161,7 +177,8 @@ class ImporterFragmentVM @Inject constructor(
     }
 
     private var usbImportJob: Job? = null
-    fun importUsb(device: UsbDevice?) = launch {
+    fun importUsb() = launch {
+        val device = selectedDevice.value
         log(TAG) { "importUsb($device)" }
         if (device == null) {
             usbImportState.value = UsbImportstate.Start()
@@ -180,60 +197,22 @@ class ImporterFragmentVM @Inject constructor(
             progressMsg = R.string.general_progress_loading.toCaString()
         )
 
-        val success = mutableListOf<UsbFile>()
-        val skipped = mutableListOf<UsbFile>()
-        val failed = mutableListOf<Pair<UsbFile, Exception>>()
-
         log(TAG, INFO) { "importUsb(...):  Checking target device ${device.deviceName}" }
-        val igcFiles = massStorageCrawler.crawl(device).filter { it.name.endsWith(".igc") }.toList()
-        log(TAG, INFO) { "importUsb(...):  ${igcFiles.size} IGC files found!" }
-
-        usbImportState.value = (usbImportState.value as UsbImportstate.Progress).copy(
-            max = igcFiles.size
-        )
-
-        igcFiles.forEach { file ->
-            if (!isActive) {
-                usbImportState.value = UsbImportstate.Start()
-                throw CancellationException()
-            }
-            log(TAG) { "importUsb(...): Ingesting $file" }
-            usbImportState.value = (usbImportState.value as UsbImportstate.Progress).copy(
-                progressMsg = file.absolutePath.toCaString()
-            )
-
-            val dangles = mutableSetOf<InputStream>()
-
-            try {
-                val added = ingester.ingest(
-                    IngestIGCPayload(
-                        sourceProvider = {
-                            UsbFileInputStream(file).also { dangles.add(it) }.source()
-                        },
-                        originalSource = file.toString(),
-                        sourceType = when {
-                            device.productName?.lowercase() == "skytraxx" -> IngestIGCPayload.SourceType.SKYTRAXX
-                            else -> IngestIGCPayload.SourceType.UNKNOWN
-                        },
-                    )
+        val result = try {
+            usbImporter.import(device) { current, max, info ->
+                usbImportState.value = (usbImportState.value as UsbImportstate.Progress).copy(
+                    current = current,
+                    max = max,
+                    progressMsg = info
                 )
-
-                if (added) success.add(file) else skipped.add(file)
-            } catch (e: Exception) {
-                failed.add(file to e)
-            } finally {
-                dangles.forEach { it.closeQuietly() }
             }
-
-            usbImportState.value = (usbImportState.value as UsbImportstate.Progress).let {
-                it.copy(current = it.current + 1)
-            }
+        } catch (e: CancellationException) {
+            usbImportState.value = UsbImportstate.Start()
+            throw e
         }
 
         usbImportState.value = UsbImportstate.Result(
-            success = success,
-            skipped = skipped,
-            failed = failed
+            result = result,
         )
     }.also { usbImportJob = it }
 
@@ -241,66 +220,9 @@ class ImporterFragmentVM @Inject constructor(
         usbImportJob?.cancel()
     }
 
-    data class ImporterState(
-        val manualImport: ManualImportState = ManualImportState.Start(),
-        val reparserState: ReparserState = ReparserState.Start(),
-        val usbImportState: UsbImportstate = UsbImportstate.Start(),
+    data class State(
+        val items: List<ImporterAdapter.Item>,
     )
-
-    sealed interface ReparserState {
-        data class Start(
-            val idle: Boolean = true
-        ) : ReparserState
-
-
-        data class Progress(
-            val current: Int = 0,
-            val max: Int = -1,
-            val progressMsg: CaString,
-        ) : ReparserState
-
-        data class Result(
-            val changes: Int,
-        ) : ReparserState
-    }
-
-    sealed interface ManualImportState {
-        data class Start(
-            val idle: Boolean = true
-        ) : ManualImportState
-
-
-        data class Progress(
-            val current: Int = 0,
-            val max: Int = -1,
-            val progressMsg: CaString,
-        ) : ManualImportState
-
-        data class Result(
-            val success: List<Uri>,
-            val skipped: List<Uri>,
-            val failed: List<Pair<Uri, Exception>>,
-        ) : ManualImportState
-    }
-
-
-    sealed interface UsbImportstate {
-        data class Start(
-            val devices: Set<UsbDevice> = emptySet()
-        ) : UsbImportstate
-
-        data class Progress(
-            val current: Int = 0,
-            val max: Int = -1,
-            val progressMsg: CaString,
-        ) : UsbImportstate
-
-        data class Result(
-            val success: List<UsbFile>,
-            val skipped: List<UsbFile>,
-            val failed: List<Pair<UsbFile, Exception>>,
-        ) : UsbImportstate
-    }
 
     companion object {
         internal val TAG = logTag("Importer", "Fragment", "VM")

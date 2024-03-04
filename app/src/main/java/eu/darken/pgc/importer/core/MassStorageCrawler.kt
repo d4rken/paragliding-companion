@@ -1,7 +1,6 @@
 package eu.darken.pgc.importer.core
 
 import android.content.Context
-import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.pgc.common.debug.logging.Logging.Priority.ERROR
@@ -15,7 +14,7 @@ import kotlinx.coroutines.flow.AbstractFlow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
-import me.jahnen.libaums.core.UsbMassStorageDevice.Companion.getMassStorageDevices
+import me.jahnen.libaums.core.UsbMassStorageDevice
 import me.jahnen.libaums.core.fs.UsbFile
 import java.io.IOException
 import java.util.LinkedList
@@ -26,15 +25,11 @@ class MassStorageCrawler @Inject constructor(
     private val usbManager: UsbManager,
 ) {
 
-    fun crawl(device: UsbDevice): Flow<UsbFile> = flow {
-        device.getMassStorageDevices(context).forEach { storageDevice ->
-            log(TAG, INFO) { "Checking storage device $storageDevice" }
-            try {
-                storageDevice.init()
-            } catch (e: Exception) {
-                log(TAG, WARN) { "init failed ${e.asLog()}" }
-                return@forEach
-            }
+    suspend fun crawl(storageDevice: UsbMassStorageDevice): Flow<UsbFile> = flow {
+        log(TAG, INFO) { "Checking storage device $storageDevice" }
+        try {
+            storageDevice.init()
+
             storageDevice.partitions.forEach { partition ->
                 log(TAG, INFO) { "Checking partition ${partition.volumeLabel}" }
 
@@ -46,6 +41,8 @@ class MassStorageCrawler @Inject constructor(
                     ).collect { emit(it) }
                 }
             }
+        } catch (e: Exception) {
+            log(TAG, WARN) { "init failed ${e.asLog()}" }
         }
     }
 
