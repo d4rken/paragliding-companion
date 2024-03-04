@@ -25,7 +25,7 @@ class IGCFlightItemVH(parent: ViewGroup) :
         payloads: List<Any>
     ) -> Unit = binding { item ->
         val flight = item.flight
-        flightTime.text = flight.flightAt?.format(formatter)
+        flightTime.text = item.flight.flightAt?.format(dayTimeFormatter)
         flightLocation.text = flight.location ?: getString(R.string.flights_list_item_unknown_location)
         flightDuration.text = flight.duration?.let { dur ->
             getString(R.string.flights_list_item_duration, dur.toMinutes(), dur.toSecondsPart())
@@ -44,11 +44,17 @@ class IGCFlightItemVH(parent: ViewGroup) :
     data class Item(
         override val flight: IGCFlight,
         val onClick: () -> Unit,
-    ) : FlightsListAdapter.Item
+    ) : FlightsListAdapter.Item {
+        override val flightDay: String?
+            get() = flight.flightAt?.format(dayFormatter)
+    }
 
     companion object {
-        private val formatter by lazy {
+        private val dayTimeFormatter: DateTimeFormatter by lazy {
             DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).withLocale(Locale.getDefault())
+        }
+        private val dayFormatter: DateTimeFormatter by lazy {
+            DateTimeFormatter.ofPattern("yyyy.MM").withLocale(Locale.getDefault())
         }
     }
 

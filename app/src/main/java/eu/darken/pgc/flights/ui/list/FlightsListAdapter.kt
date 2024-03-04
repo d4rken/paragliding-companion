@@ -37,6 +37,8 @@ class FlightsListAdapter @Inject constructor() :
     interface Item : DifferItem {
         val flight: Flight
 
+        val flightDay: String?
+
         override val stableId: Long
             get() = flight.id.hashCode().toLong()
 

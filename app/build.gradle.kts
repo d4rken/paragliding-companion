@@ -158,4 +158,6 @@ dependencies {
     kapt("androidx.room:room-compiler:2.6.1")
 
     implementation("me.jahnen.libaums:core:0.10.0")
+
+    implementation("com.github.reddit:IndicatorFastScroll:f9576c7") // 1.4.0
 }
