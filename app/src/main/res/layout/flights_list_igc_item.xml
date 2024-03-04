@@ -6,9 +6,9 @@
     android:layout_height="wrap_content">
 
     <View
+        android:id="@+id/quality_indicator"
         android:layout_width="4dp"
         android:layout_height="0dp"
-        android:id="@+id/quality_indicator"
         android:background="?colorError"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -51,13 +51,16 @@
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/flight_location"
         style="@style/TextAppearance.Material3.BodyMedium"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:ellipsize="end"
+        android:maxLines="1"
         app:layout_constraintBottom_toTopOf="@id/glider_type"
+        app:layout_constraintEnd_toStartOf="@id/flight_duration"
         app:layout_constraintStart_toStartOf="@id/flight_time"
         app:layout_constraintTop_toBottomOf="@id/flight_time"
         tools:text="Buchenberg" />
-
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/glider_type"
@@ -66,6 +69,8 @@
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="16dp"
+        android:ellipsize="end"
+        android:maxLines="1"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@id/tracker_type"
         app:layout_constraintStart_toStartOf="@id/flight_time"
@@ -76,13 +81,15 @@
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tracker_type"
         style="@style/TextAppearance.Material3.LabelSmall"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="16dp"
+        android:ellipsize="end"
+        android:maxLines="1"
         app:layout_constraintBottom_toBottomOf="@id/glider_type"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/glider_type"
-        tools:text="XCTrack 0.0.0.0" />
+        tools:text="XCTrack 0.0.0.0 lorem ipsum asd asd as dasd asd asd asd asd ads asd" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

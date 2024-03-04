@@ -8,6 +8,7 @@ import eu.darken.pgc.flights.core.database.FlightEntity
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import kotlin.math.roundToInt
@@ -37,10 +38,10 @@ fun IGCFile.toFlightEntity(
     importedAt = importedAt,
     checksumSha1 = checksumSha1,
     flightAt = (header?.flightDay ?: LocalDate.EPOCH).let { day ->
-        bRecords.firstOrNull()?.time?.let { time ->
-            val offset = ZoneOffset.ofTotalSeconds(((header?.timezoneOffset ?: 0f) * 3600).roundToInt())
-            day.atTime(time.atOffset(offset))
-        }
+        val start = bRecords.firstOrNull()?.time ?: LocalTime.MIDNIGHT
+
+        val offset = ZoneOffset.ofTotalSeconds(((header?.timezoneOffset ?: 0f) * 3600).roundToInt())
+        day.atTime(start.atOffset(offset))
     },
     flightSite = header?.flightSite?.takeIf { it != "?" },
     flightDuration = flightDuration,
