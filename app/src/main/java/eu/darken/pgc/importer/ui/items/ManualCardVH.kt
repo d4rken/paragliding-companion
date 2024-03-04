@@ -7,6 +7,7 @@ import eu.darken.pgc.R
 import eu.darken.pgc.common.ca.CaString
 import eu.darken.pgc.common.lists.binding
 import eu.darken.pgc.databinding.ImporterManualItemBinding
+import eu.darken.pgc.importer.core.UriImporter
 import eu.darken.pgc.importer.ui.ImporterAdapter
 import kotlin.math.roundToInt
 
@@ -89,10 +90,15 @@ class ManualCardVH(parent: ViewGroup) :
             ) : ManualImportState
 
             data class Result(
-                val success: List<Uri>,
-                val skipped: List<Uri>,
-                val failed: List<Pair<Uri, Exception>>,
-            ) : ManualImportState
+                val result: UriImporter.Result
+            ) : ManualImportState {
+                val success: List<Uri>
+                    get() = result.success
+                val skipped: List<Uri>
+                    get() = result.skipped
+                val failed: List<Pair<Uri, Exception>>
+                    get() = result.failed
+            }
         }
     }
 

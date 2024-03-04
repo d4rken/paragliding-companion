@@ -1,15 +1,11 @@
 package eu.darken.pgc.importer.ui
 
-import android.content.ContentResolver
-import android.content.Context
 import android.content.Intent
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import android.net.Uri
-import android.webkit.MimeTypeMap
 import androidx.lifecycle.SavedStateHandle
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import eu.darken.pgc.R
 import eu.darken.pgc.common.ca.toCaString
 import eu.darken.pgc.common.coroutine.DispatcherProvider
@@ -18,8 +14,8 @@ import eu.darken.pgc.common.debug.logging.log
 import eu.darken.pgc.common.debug.logging.logTag
 import eu.darken.pgc.common.livedata.SingleLiveEvent
 import eu.darken.pgc.common.uix.ViewModel3
-import eu.darken.pgc.importer.core.IngestIGCPayload
-import eu.darken.pgc.importer.core.Ingester
+import eu.darken.pgc.importer.core.Reparser
+import eu.darken.pgc.importer.core.UriImporter
 import eu.darken.pgc.importer.core.UsbDevicesProvider
 import eu.darken.pgc.importer.core.UsbImporter
 import eu.darken.pgc.importer.ui.items.ManualCardVH
@@ -32,21 +28,17 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
-import okhttp3.internal.closeQuietly
-import okio.source
-import java.io.InputStream
 import javax.inject.Inject
 
 @HiltViewModel
 class ImporterFragmentVM @Inject constructor(
     handle: SavedStateHandle,
     dispatcherProvider: DispatcherProvider,
-    private val ingester: Ingester,
-    private val contentResolver: ContentResolver,
-    @ApplicationContext private val context: Context,
     private val usbManager: UsbManager,
     private val usbDevicesProvider: UsbDevicesProvider,
     private val usbImporter: UsbImporter,
+    private val uriImporter: UriImporter,
+    private val reparser: Reparser,
 ) : ViewModel3(dispatcherProvider = dispatcherProvider) {
 
     val events = SingleLiveEvent<ImporterEvents>()
@@ -96,18 +88,12 @@ class ImporterFragmentVM @Inject constructor(
 
     fun reparse() = launch {
         log(TAG) { "reparse()" }
-        reparserState.value = ReparserState.Progress(
-            max = ingester.flightCount(),
-            progressMsg = R.string.general_progress_loading.toCaString()
-        )
-
-        val changed = ingester.reingest { progress ->
-            reparserState.value = (reparserState.value as ReparserState.Progress).let {
-                it.copy(
-                    progressMsg = progress,
-                    current = it.current + 1
-                )
-            }
+        val changed = reparser.reparse { current, max, info ->
+            reparserState.value = ReparserState.Progress(
+                current = current,
+                max = max,
+                progressMsg = info
+            )
         }
 
         reparserState.value = ReparserState.Result(
@@ -123,57 +109,16 @@ class ImporterFragmentVM @Inject constructor(
             progressMsg = R.string.general_progress_loading.toCaString()
         )
 
-        val success = mutableListOf<Uri>()
-        val skipped = mutableListOf<Uri>()
-        val failed = mutableListOf<Pair<Uri, Exception>>()
-
-        uris
-            .filter { MimeTypeMap.getFileExtensionFromUrl(it.path!!) == "igc" }
-            .forEach { uri ->
-                log(TAG) { "importManual(...): $uri" }
-                manualImportState.value =
-                    (manualImportState.value as ManualImportState.Progress).copy(
-                        progressMsg = (uri.lastPathSegment ?: uri.toString()).toCaString()
-                    )
-
-                val dangles = mutableSetOf<InputStream>()
-
-                try {
-                    val added = ingester.ingest(
-                        IngestIGCPayload(
-                            sourceProvider = {
-                                contentResolver.openInputStream(uri)!!.also { dangles.add(it) }.source()
-                            },
-                            originalSource = uri.toString(),
-                            sourceType = when {
-                                uri.authority?.contains("org.xcontest.XCTrack") == true -> IngestIGCPayload.SourceType.XCTRACK
-                                else -> IngestIGCPayload.SourceType.UNKNOWN
-                            },
-                        )
-                    )
-
-                    if (added) success.add(uri) else skipped.add(uri)
-                } catch (e: Exception) {
-                    failed.add(uri to e)
-                } finally {
-                    dangles.forEach { it.closeQuietly() }
-                }
-
-                manualImportState.value =
-                    (manualImportState.value as ManualImportState.Progress).let {
-                        it.copy(current = it.current + 1)
-                    }
-            }
-
-        (uris - (success + skipped).toSet()).forEach {
-            failed.add(it to IllegalArgumentException("Unknown data type"))
+        val result = uriImporter.import(uris) { current, max, info ->
+            manualImportState.value = (manualImportState.value as ManualImportState.Progress).copy(
+                current = current,
+                max = max,
+                progressMsg = info
+            )
         }
 
-        manualImportState.value = ManualImportState.Result(
-            success = success,
-            skipped = skipped,
-            failed = failed
-        )
+
+        manualImportState.value = ManualImportState.Result(result)
     }.also { manualImportJob = it }
 
     private var usbImportJob: Job? = null
