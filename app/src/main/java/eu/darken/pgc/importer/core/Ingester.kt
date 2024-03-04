@@ -23,6 +23,7 @@ import okio.ByteString.Companion.toByteString
 import okio.Source
 import okio.buffer
 import java.security.MessageDigest
+import java.time.LocalDate
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -57,9 +58,31 @@ class Ingester @Inject constructor(
             throw IllegalArgumentException("COLLISION: $idCollision")
         }
 
+        val extraFlightDay = if (parsed.header?.flightDay == null) {
+            log(TAG, WARN) { "ingest(...) Incomplete header, trying to get flight day from file name/path" }
+            when (payload.sourceType) {
+                IngestIGCPayload.SourceType.XCTRACK -> {
+                    payload.originalPath.split("/").lastOrNull()
+                        ?.let { Regex("(\\d{4})-(\\d{2})-(\\d{2})-\\w{3}-\\w{3}-(\\d*)").matchAt(it, 0) }
+                        ?.let {
+                            LocalDate.of(
+                                it.groupValues[1].toInt(),
+                                it.groupValues[2].toInt(),
+                                it.groupValues[3].toInt()
+                            )
+                        }
+                        ?.also { log(TAG, WARN) { "ingest(...) Flight day from file name/path -> $it" } }
+                }
+
+                IngestIGCPayload.SourceType.SKYTRAXX -> null // TODO
+                IngestIGCPayload.SourceType.UNKNOWN -> null
+            }
+        } else null
+
         val igcFlightEntity = parsed.toFlightEntity(
             flightId = newId,
             checksumSha1 = sha1,
+            flightAtExra = extraFlightDay,
         )
 
         database.flightsIgc.insert(igcFlightEntity)
@@ -91,6 +114,7 @@ class Ingester @Inject constructor(
                     flightId = oldEntity.flightId,
                     importedAt = oldEntity.importedAt,
                     checksumSha1 = oldEntity.checksumSha1,
+                    flightAtExra = oldEntity.flightAt?.toLocalDate(),
                 )
                 if (oldEntity != newEntity) {
                     log(TAG, INFO) { "Before (#$index): $oldEntity" }

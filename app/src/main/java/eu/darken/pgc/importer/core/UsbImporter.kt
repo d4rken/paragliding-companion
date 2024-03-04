@@ -85,7 +85,7 @@ class UsbImporter @Inject constructor(
                         sourceProvider = {
                             UsbFileInputStream(file).also { dangles.add(it) }.source()
                         },
-                        originalSource = file.toString(),
+                        originalPath = file.toString(),
                         sourceType = when {
                             device.usbDevice.productName?.lowercase() == "skytraxx" -> IngestIGCPayload.SourceType.SKYTRAXX
                             else -> IngestIGCPayload.SourceType.UNKNOWN

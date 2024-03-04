@@ -32,14 +32,14 @@ fun IGCFile.toFlightEntity(
     flightId: Flight.Id,
     importedAt: Instant = Instant.now(),
     checksumSha1: String,
+    flightAtExra: LocalDate? = null,
 ) = IGCFlightEntity(
     id = id,
     flightId = flightId,
     importedAt = importedAt,
     checksumSha1 = checksumSha1,
-    flightAt = (header?.flightDay ?: LocalDate.EPOCH).let { day ->
+    flightAt = ((header?.flightDay ?: flightAtExra) ?: LocalDate.EPOCH).let { day ->
         val start = bRecords.firstOrNull()?.time ?: LocalTime.MIDNIGHT
-
         val offset = ZoneOffset.ofTotalSeconds(((header?.timezoneOffset ?: 0f) * 3600).roundToInt())
         day.atTime(start.atOffset(offset))
     },

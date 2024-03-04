@@ -38,7 +38,7 @@ class UriImporter @Inject constructor(
                         sourceProvider = {
                             contentResolver.openInputStream(uri)!!.also { dangles.add(it) }.source()
                         },
-                        originalSource = uri.toString(),
+                        originalPath = uri.path ?: uri.toString(),
                         sourceType = when {
                             uri.authority?.contains("org.xcontest.XCTrack") == true -> IngestIGCPayload.SourceType.XCTRACK
                             else -> IngestIGCPayload.SourceType.UNKNOWN

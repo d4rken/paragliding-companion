@@ -5,7 +5,7 @@ import okio.Source
 data class IngestIGCPayload(
     val sourceProvider: suspend () -> Source,
     val sourceType: SourceType,
-    val originalSource: String,
+    val originalPath: String,
 ) {
     enum class SourceType {
         XCTRACK,
