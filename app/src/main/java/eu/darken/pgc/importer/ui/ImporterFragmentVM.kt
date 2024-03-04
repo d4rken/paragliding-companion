@@ -94,6 +94,27 @@ class ImporterFragmentVM @Inject constructor(
         State(items = items)
     }.asLiveData2()
 
+    fun reparse() = launch {
+        log(TAG) { "reparse()" }
+        reparserState.value = ReparserState.Progress(
+            max = ingester.flightCount(),
+            progressMsg = R.string.general_progress_loading.toCaString()
+        )
+
+        val changed = ingester.reingest { progress ->
+            reparserState.value = (reparserState.value as ReparserState.Progress).let {
+                it.copy(
+                    progressMsg = progress,
+                    current = it.current + 1
+                )
+            }
+        }
+
+        reparserState.value = ReparserState.Result(
+            changes = changed
+        )
+    }
+
     private var manualImportJob: Job? = null
     fun importManual(uris: Set<Uri>) = launch {
         log(TAG) { "importManual(uris=${uris.size})" }
@@ -154,27 +175,6 @@ class ImporterFragmentVM @Inject constructor(
             failed = failed
         )
     }.also { manualImportJob = it }
-
-    fun reparse() = launch {
-        log(TAG) { "reparse()" }
-        reparserState.value = ReparserState.Progress(
-            max = ingester.flightCount(),
-            progressMsg = R.string.general_progress_loading.toCaString()
-        )
-
-        val changed = ingester.reingest { progress ->
-            reparserState.value = (reparserState.value as ReparserState.Progress).let {
-                it.copy(
-                    progressMsg = progress,
-                    current = it.current + 1
-                )
-            }
-        }
-
-        reparserState.value = ReparserState.Result(
-            changes = changed
-        )
-    }
 
     private var usbImportJob: Job? = null
     fun importUsb() = launch {
