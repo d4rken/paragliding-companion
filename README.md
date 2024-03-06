@@ -7,18 +7,18 @@
 [![Code tests & eval](https://github.com/d4rken/paragliding-companion/actions/workflows/code-checks.yml/badge.svg)](https://github.com/d4rken/paragliding-companion/actions/workflows/code-checks.yml)
 [![Github All Releases](https://img.shields.io/github/downloads/d4rken/paragliding-companion/total.svg)]()
 
-An Android app for paragliding enthusiasts
+An Android app to collect and manage logged flights. To have a common place for storing logged flights from different sources.
 
 Current features:
 * Manual IGC file import
+* Import IGC files from Skytraxx directly to your phone
 * Show aggregate statistics for your flight data
   * Total flights
   * Total flight hours
   * Flights at different locations
+* Backup/Export of all imported flights
 
 Planned features:
-* Import IGC files from XCTrack automatically
-* Import IGC files from Skytraxx directly to your phone
 * Flight stats
   * Starts
   * Landings
@@ -28,7 +28,7 @@ Planned features:
 * Track flight equiment specific stats
   * Hours per canopy
 * Reminders for servicing your gear (canopy check, rescue check)
-* Sync and backup of flight data to and from various sources
+* Automatic backup to cloud
 
 ## Screenshots
 
