@@ -22,7 +22,11 @@
     <fragment
         android:id="@+id/settingsContainerFragment"
         android:name="eu.darken.pgc.main.ui.settings.SettingsFragment"
-        tools:layout="@layout/settings_fragment" />
+        tools:layout="@layout/settings_fragment">
+        <action
+            android:id="@+id/action_settingsContainerFragment_to_backupFragment"
+            app:destination="@id/backupFragment" />
+    </fragment>
     <fragment
         android:id="@+id/ingesterFragment"
         android:name="eu.darken.pgc.importer.ui.ImporterFragment"
@@ -31,5 +35,9 @@
         android:id="@+id/flightsListFragment"
         android:name="eu.darken.pgc.flights.ui.list.FlightsListFragment"
         tools:layout="@layout/flights_list_fragment" />
+    <fragment
+        android:id="@+id/backupFragment"
+        android:name="eu.darken.pgc.backup.ui.local.LocalBackupFragment"
+        tools:layout="@layout/backup_local_save_fragment" />
 
 </navigation>

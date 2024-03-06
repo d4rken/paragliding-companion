@@ -95,4 +95,16 @@
     <string name="flights_title">Flights</string>
     <string name="flights_list_item_duration">%dm %ds</string>
     <string name="flights_list_item_unknown_location">Unknown location</string>
+
+    <string name="backup_settings_label">Backup</string>
+    <string name="backup_settings_desc">Backup your flight data files.</string>
+    <string name="backup_local_category">Local backup</string>
+    <string name="backup_local_save_label">Backup</string>
+    <string name="backup_local_save_desc">Save a ZIP file on your device that contains all flight data.</string>
+    <string name="backup_local_restore_label">Restore</string>
+    <string name="backup_local_restore_desc">Restore flight data from a backupped ZIP file.</string>
+    <string name="backup_tool_label">Backup tool</string>
+    <string name="backup_local_select_path_action">Select path</string>
+    <string name="backup_local_select_path_desc">Select where you want to store the backup.</string>
+    <string name="backup_local_result_success_desc">Backup created: %s</string>
 </resources>

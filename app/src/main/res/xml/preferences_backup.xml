@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory app:title="@string/backup_local_category">
+
+        <Preference
+            android:icon="@drawable/ic_save_alt_24"
+            android:key="backup.local.save"
+            app:summary="@string/backup_local_save_desc"
+            app:title="@string/backup_local_save_label" />
+        <Preference
+            android:icon="@drawable/ic_restore_page_24"
+            android:key="backup.local.load"
+            app:isPreferenceVisible="false"
+            app:summary="@string/backup_local_restore_desc"
+            app:title="@string/backup_local_restore_label" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

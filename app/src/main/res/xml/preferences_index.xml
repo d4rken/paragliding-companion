@@ -7,6 +7,12 @@
         app:summary="@string/general_settings_desc"
         app:title="@string/general_settings_label" />
 
+    <Preference
+        android:icon="@drawable/ic_save_alt_24"
+        app:fragment="eu.darken.pgc.backup.ui.settings.BackupSettingsFragment"
+        app:summary="@string/backup_settings_desc"
+        app:title="@string/backup_settings_label" />
+
     <PreferenceCategory android:title="@string/settings_category_other_label">
 
         <eu.darken.pgc.common.preferences.IntentPreference

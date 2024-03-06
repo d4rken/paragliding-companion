@@ -2,10 +2,8 @@ package eu.darken.pgc.main.ui.settings.general
 
 import androidx.annotation.Keep
 import androidx.fragment.app.viewModels
-import androidx.preference.Preference
 import dagger.hilt.android.AndroidEntryPoint
 import eu.darken.pgc.R
-import eu.darken.pgc.common.datastore.valueBlocking
 import eu.darken.pgc.common.preferences.ListPreference2
 import eu.darken.pgc.common.preferences.setupWithEnum
 import eu.darken.pgc.common.uix.PreferenceFragment2
@@ -33,10 +31,6 @@ class GeneralSettingsFragment : PreferenceFragment2() {
         themeStylePref.setupWithEnum(settings.themeStyle)
 
         super.onPreferencesCreated()
-    }
-
-    override fun onPreferencesChanged() {
-        findPreference<Preference>(settings.deviceLabel.keyName)?.summary = settings.deviceLabel.valueBlocking
     }
 
 }
