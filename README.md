@@ -35,3 +35,7 @@ Planned features:
 <img src="https://github.com/d4rken/paragliding-companion/assets/1439229/774c257e-9533-4a94-b351-4c5ecb839230" width="100">
 <img src="https://github.com/d4rken/paragliding-companion/assets/1439229/5195d2d3-8216-4e50-b647-38d853eb7338" width="100">
 <img src="https://github.com/d4rken/paragliding-companion/assets/1439229/1435fcf6-8275-4016-a655-79eb324f146f" width="100">
+
+
+<img src="https://github.com/d4rken/paragliding-companion/assets/1439229/ba5e24cf-8663-42af-8f85-12260c6eea58" width="300">
+
